@@ -1,21 +1,24 @@
-import { createClient } from 'webdav';
-import { getEnvVar } from './env';
+import { createClient } from "webdav";
+import { getEnvVar } from "./env";
 
 // Get environment variables
-const NEXTCLOUD_URL = getEnvVar('NEXTCLOUD_URL');
-const NEXTCLOUD_USERNAME = getEnvVar('NEXTCLOUD_USERNAME');
-const NEXTCLOUD_PASSWORD = getEnvVar('NEXTCLOUD_PASSWORD');
-const NEXTCLOUD_PHOTOS_PATH = process.env.NEXTCLOUD_PHOTOS_PATH || 'Photos/Portfolio';
+const NEXTCLOUD_URL = getEnvVar("NEXTCLOUD_URL");
+const NEXTCLOUD_USERNAME = getEnvVar("NEXTCLOUD_USERNAME");
+const NEXTCLOUD_PASSWORD = getEnvVar("NEXTCLOUD_PASSWORD");
+const NEXTCLOUD_PHOTOS_PATH =
+  process.env.NEXTCLOUD_PHOTOS_PATH || "Photos/Portfolio";
 
 // Create WebDAV client
-const baseUrl = NEXTCLOUD_URL.endsWith('/') ? NEXTCLOUD_URL.slice(0, -1) : NEXTCLOUD_URL;
+const baseUrl = NEXTCLOUD_URL.endsWith("/")
+  ? NEXTCLOUD_URL.slice(0, -1)
+  : NEXTCLOUD_URL;
 const webdavUrl = `${baseUrl}/remote.php/webdav`;
 
 const client = createClient(webdavUrl, {
   username: NEXTCLOUD_USERNAME,
   password: NEXTCLOUD_PASSWORD,
   headers: {
-    'Accept': '*/*',
+    Accept: "*/*",
   },
 });
 
@@ -23,13 +26,19 @@ const client = createClient(webdavUrl, {
  * Get the full path for a photo in Nextcloud
  */
 function getPhotoPath(filename: string): string {
-  return `${NEXTCLOUD_PHOTOS_PATH}/${filename}`.split('/').filter(Boolean).join('/');
+  return `${NEXTCLOUD_PHOTOS_PATH}/${filename}`
+    .split("/")
+    .filter(Boolean)
+    .join("/");
 }
 
 /**
  * Upload a photo to Nextcloud
  */
-export async function uploadPhoto(buffer: Buffer, filename: string): Promise<void> {
+export async function uploadPhoto(
+  buffer: Buffer,
+  filename: string,
+): Promise<void> {
   const path = getPhotoPath(filename);
   await client.putFileContents(path, buffer);
 }
@@ -40,50 +49,62 @@ export async function uploadPhoto(buffer: Buffer, filename: string): Promise<voi
 export async function downloadPhoto(src: string): Promise<Buffer | null> {
   try {
     // Extract the filename from the src path, which could be like "/photos/image.jpg"
-    const filename = src.split('/').pop()!;
-    
+    const filename = src.split("/").pop()!;
+
     // Get the clean path for Nextcloud
     const path = getPhotoPath(filename);
-    
-    console.log(`[Nextcloud] Attempting to download file: ${path} (from src: ${src})`);
+
+    console.log(
+      `[Nextcloud] Attempting to download file: ${path} (from src: ${src})`,
+    );
     console.log(`[Nextcloud] Using Nextcloud base URL: ${webdavUrl}`);
     console.log(`[Nextcloud] NEXTCLOUD_PHOTOS_PATH: ${NEXTCLOUD_PHOTOS_PATH}`);
-    
+
     // Check if file exists first
     const exists = await client.exists(path);
     if (!exists) {
       console.log(`[Nextcloud] File not found at path: ${path}`);
-      
+
       // Try a simple approach as fallback - just the filename directly
       const simplePath = filename;
       console.log(`[Nextcloud] Trying fallback path: ${simplePath}`);
-      
+
       const simpleExists = await client.exists(simplePath);
       if (!simpleExists) {
-        console.log(`[Nextcloud] File not found at fallback path either: ${simplePath}`);
+        console.log(
+          `[Nextcloud] File not found at fallback path either: ${simplePath}`,
+        );
         return null;
       }
-      
-      console.log(`[Nextcloud] File found at fallback path, downloading: ${simplePath}`);
+
+      console.log(
+        `[Nextcloud] File found at fallback path, downloading: ${simplePath}`,
+      );
       const simpleResponse = await client.getFileContents(simplePath);
-      
+
       if (simpleResponse instanceof Buffer) {
-        console.log(`[Nextcloud] Successfully downloaded file from fallback path: ${simplePath}, size: ${simpleResponse.length} bytes`);
+        console.log(
+          `[Nextcloud] Successfully downloaded file from fallback path: ${simplePath}, size: ${simpleResponse.length} bytes`,
+        );
         return simpleResponse;
       }
-      
+
       return null;
     }
-    
+
     console.log(`[Nextcloud] File exists, downloading: ${path}`);
     const response = await client.getFileContents(path);
-    
+
     if (response instanceof Buffer) {
-      console.log(`[Nextcloud] Successfully downloaded file: ${path}, size: ${response.length} bytes`);
+      console.log(
+        `[Nextcloud] Successfully downloaded file: ${path}, size: ${response.length} bytes`,
+      );
       return response;
     }
-    
-    console.log(`[Nextcloud] File response is not a Buffer: ${typeof response}`);
+
+    console.log(
+      `[Nextcloud] File response is not a Buffer: ${typeof response}`,
+    );
     return null;
   } catch (error) {
     console.error(`[Nextcloud] Error downloading photo ${src}:`, error);
@@ -95,7 +116,7 @@ export async function downloadPhoto(src: string): Promise<Buffer | null> {
  * Delete a photo from Nextcloud
  */
 export async function deletePhoto(src: string): Promise<void> {
-  const filename = src.split('/').pop()!;
+  const filename = src.split("/").pop()!;
   const path = getPhotoPath(filename);
   await client.deleteFile(path);
 }
@@ -105,11 +126,11 @@ export async function deletePhoto(src: string): Promise<void> {
  */
 export async function photoExists(src: string): Promise<boolean> {
   try {
-    const filename = src.split('/').pop()!;
+    const filename = src.split("/").pop()!;
     const path = getPhotoPath(filename);
     return await client.exists(path);
   } catch (error) {
-    console.error('Error checking if photo exists:', error);
+    console.error("Error checking if photo exists:", error);
     return false;
   }
 }
@@ -117,19 +138,22 @@ export async function photoExists(src: string): Promise<boolean> {
 /**
  * Test connection to Nextcloud
  */
-export async function testConnection(): Promise<{ success: boolean; message: string }> {
+export async function testConnection(): Promise<{
+  success: boolean;
+  message: string;
+}> {
   try {
     // Try to list the root directory to check if authentication works
-    await client.getDirectoryContents('/');
-    return { 
-      success: true, 
-      message: `Successfully connected to Nextcloud at ${NEXTCLOUD_URL}` 
+    await client.getDirectoryContents("/");
+    return {
+      success: true,
+      message: `Successfully connected to Nextcloud at ${NEXTCLOUD_URL}`,
     };
   } catch (error) {
-    console.error('Error connecting to Nextcloud:', error);
-    return { 
-      success: false, 
-      message: `Failed to connect to Nextcloud: ${(error as Error).message}` 
+    console.error("Error connecting to Nextcloud:", error);
+    return {
+      success: false,
+      message: `Failed to connect to Nextcloud: ${(error as Error).message}`,
     };
   }
 }
@@ -137,42 +161,46 @@ export async function testConnection(): Promise<{ success: boolean; message: str
 /**
  * Get photos with metadata from Nextcloud
  */
-export async function getPhotosWithMetadata(): Promise<any[]> {
+import { INextcloudPhoto } from "./nextcloud-types";
+
+export async function getPhotosWithMetadata(): Promise<INextcloudPhoto[]> {
   try {
     // Get all files in the photos directory
-    const filesResponse = await client.getDirectoryContents(NEXTCLOUD_PHOTOS_PATH);
-    
+    const filesResponse = await client.getDirectoryContents(
+      NEXTCLOUD_PHOTOS_PATH,
+    );
+
     // Handle both possible return types
-    const files = Array.isArray(filesResponse) ? filesResponse : filesResponse.data;
-    
+    const files = Array.isArray(filesResponse)
+      ? filesResponse
+      : filesResponse.data;
+
     // Filter just image files
-    const imageFiles = files.filter(file => {
+    const imageFiles = files.filter((file) => {
       const filename = file.basename;
-      return !file.type.endsWith('directory') && 
-        /\.(jpe?g|png)$/i.test(filename);
+      return (
+        !file.type.endsWith("directory") && /\.(jpe?g|png)$/i.test(filename)
+      );
     });
-    
+
     // Map to photo metadata structure
-    return imageFiles.map(file => {
+    return imageFiles.map((file) => {
       const filename = file.basename;
       const src = `/photos/${filename}`;
-      
+
       // Generate a unique ID based on the file path
-      const id = Buffer.from(file.filename).toString('base64').replace(/[/+=]/g, '');
-      
       return {
-        id,
-        src,
-        title: filename.replace(/\.[^/.]+$/, '').replace(/_/g, ' '),
-        alt: filename.replace(/\.[^/.]+$/, '').replace(/_/g, ' '),
-        width: 1200, // placeholder values
-        height: 800,
-        createdAt: file.lastmod || new Date().toISOString(),
-        updatedAt: file.lastmod || new Date().toISOString()
+        filename: file.basename || "",
+        publicUrl: src,
+        metadata: {
+          size: file.size,
+          lastmod: file.lastmod || new Date().toISOString(),
+          mime: file.mime,
+        },
       };
     });
   } catch (error) {
-    console.error('Error getting photos with metadata:', error);
+    console.error("Error getting photos with metadata:", error);
     return [];
   }
 }

@@ -1,5 +1,3 @@
-import { FileStat } from 'webdav';
-
 export interface INextcloudPhoto {
   filename: string;
   publicUrl: string;

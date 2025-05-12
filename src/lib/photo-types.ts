@@ -9,7 +9,7 @@ export interface PhotoMetadata {
   location?: string;
   camera?: string;
   description?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

@@ -15,7 +15,7 @@ interface PhotoData {
   photos: Photo[];
 }
 
-const photoData: PhotoData = require('./photos.json');
+import photoData from "./photos.json" assert { type: "json" };
 
 export type { Photo, PhotoData };
 export default photoData;
