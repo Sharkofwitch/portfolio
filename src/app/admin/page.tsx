@@ -149,7 +149,13 @@ export default function AdminPage() {
       const response = await fetch("/api/photos");
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
+        console.log("Admin: Photos data received:", data);
+
+        if (Array.isArray(data)) {
+          setPhotos(data);
+        } else if (data.photos) {
+          setPhotos(data.photos);
+        } else if (data.success && data.photos) {
           setPhotos(data.photos);
         }
         return data;
@@ -242,11 +248,22 @@ export default function AdminPage() {
             {previewUrl && (
               <div className="relative aspect-video">
                 <Image
-                  src={
-                    previewUrl?.startsWith("/photos/")
-                      ? previewUrl.replace("/photos/", "/api/photos/")
-                      : previewUrl
-                  }
+                  src={(() => {
+                    if (!previewUrl) return "/placeholder-image.svg";
+
+                    // Handle the preview URL format
+                    if (previewUrl.startsWith("/photos/")) {
+                      const filename = previewUrl.split("/").pop();
+                      return `/api/photos/${filename}`;
+                    } else if (previewUrl.startsWith("/api/photos/")) {
+                      return previewUrl;
+                    } else if (previewUrl.startsWith("blob:")) {
+                      // Local blob preview from file upload
+                      return previewUrl;
+                    } else {
+                      return previewUrl;
+                    }
+                  })()}
                   alt="Preview"
                   fill
                   className="object-cover rounded-lg"
@@ -370,11 +387,19 @@ export default function AdminPage() {
                 className="relative group"
               >
                 <Image
-                  src={
-                    photo.src.startsWith("/photos/")
-                      ? photo.src.replace("/photos/", "/api/photos/")
-                      : photo.src
-                  }
+                  src={(() => {
+                    // Handle different photo src formats
+                    if (photo.src.startsWith("/photos/")) {
+                      const filename = photo.src.split("/").pop();
+                      return `/api/photos/${filename}`;
+                    } else if (photo.src.startsWith("/api/photos/")) {
+                      return photo.src;
+                    } else {
+                      // For any other format, try to extract the filename
+                      const filename = photo.src.split("/").pop() || photo.src;
+                      return `/api/photos/${filename}`;
+                    }
+                  })()}
                   alt={photo.alt}
                   width={300}
                   height={200}

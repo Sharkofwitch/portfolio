@@ -21,6 +21,7 @@ export async function GET(
     console.log(
       `[API${isProduction ? "/Vercel" : ""}] Attempting to load photo: ${src}`,
     );
+    console.log(`[API] Raw filename parameter: ${filename}`);
 
     // Skip known problematic images immediately
     const knownBadFiles = ["image_12.jpg", "image_36.jpg"];

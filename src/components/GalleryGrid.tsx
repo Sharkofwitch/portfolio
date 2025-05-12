@@ -132,13 +132,28 @@ function PhotoCard({
       <div className="absolute inset-0 overflow-hidden">
         {photo.src && (
           <Image
-            src={
-              photo.src.startsWith("/photos/")
-                ? `/api/photos/${photo.src.split("/").pop()}`
-                : photo.src.startsWith("/api/photos/")
-                  ? photo.src
-                  : `/api/photos/${photo.src}`
-            }
+            src={(() => {
+              // Extract filename from photo src path
+              let imageSrc = "";
+              if (photo.src.startsWith("/photos/")) {
+                // For paths like /photos/image.jpg
+                imageSrc = `/api/photos/${photo.src.split("/").pop()}`;
+                console.log(`Converting ${photo.src} to ${imageSrc}`);
+              } else if (photo.src.startsWith("/api/photos/")) {
+                // Already in the right format
+                imageSrc = photo.src;
+              } else {
+                // For other formats, try to extract filename or use as is
+                const parts = photo.src.split("/").filter(Boolean);
+                const filename =
+                  parts.length > 0 ? parts[parts.length - 1] : photo.src;
+                imageSrc = `/api/photos/${filename}`;
+                console.log(
+                  `Using extracted filename ${filename} from ${photo.src}`,
+                );
+              }
+              return imageSrc;
+            })()}
             alt={photo.alt || "Gallery image"}
             fill
             className={`object-cover transition-all duration-500 group-hover:scale-105 vintage-filter ${

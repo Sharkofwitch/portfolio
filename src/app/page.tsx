@@ -30,11 +30,16 @@ export default function Home() {
         const response = await fetch("/api/photos");
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.photos.length > 0) {
+
+          // Handle both data formats (direct array or nested in photos property)
+          const photosArray = Array.isArray(data) ? data : data.photos;
+          console.log("Home: Photos data received:", photosArray);
+
+          if (photosArray && photosArray.length > 0) {
             // Get the first 3 photos for the slider
-            setFeaturedPhotos(data.photos.slice(0, 3));
+            setFeaturedPhotos(photosArray.slice(0, 3));
             // Get the next 6 photos for the recent works grid
-            setRecentPhotos(data.photos.slice(3, 9));
+            setRecentPhotos(photosArray.slice(3, 9));
           }
         }
       } catch (error) {

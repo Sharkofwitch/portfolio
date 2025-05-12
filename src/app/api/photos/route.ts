@@ -54,10 +54,22 @@ export async function POST(req: NextRequest) {
     console.log("Generated src:", src);
 
     // Upload to Nextcloud
-    console.log("Uploading to Nextcloud...");
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await uploadPhoto(buffer, uniqueName);
-    console.log("Upload successful");
+    console.log(`Uploading to Nextcloud... File size: ${file.size} bytes`);
+    const arrayBuffer = await file.arrayBuffer();
+    console.log(`ArrayBuffer obtained, size: ${arrayBuffer.byteLength} bytes`);
+    const buffer = Buffer.from(arrayBuffer);
+    console.log(`Buffer created, size: ${buffer.length} bytes`);
+
+    try {
+      await uploadPhoto(buffer, uniqueName);
+      console.log(`Upload successful for file: ${uniqueName}`);
+    } catch (uploadError) {
+      console.error("Error uploading to Nextcloud:", uploadError);
+      return NextResponse.json(
+        { error: "Failed to upload to storage" },
+        { status: 500 },
+      );
+    }
 
     // Save to database with default dimensions
     console.log("Saving to database...");
@@ -101,17 +113,38 @@ export async function GET() {
       },
     });
 
+    console.log(`API: Found ${dbPhotos.length} photos in database`);
+
     if (dbPhotos.length > 0) {
-      console.log(`API: Returning ${dbPhotos.length} photos from database`);
-      // Return in format expected by gallery
-      return NextResponse.json(dbPhotos);
+      // Check if any photos need path fixing (for backward compatibility)
+      const normalizedPhotos = dbPhotos.map((photo) => {
+        if (
+          !photo.src.startsWith("/photos/") &&
+          !photo.src.startsWith("/api/")
+        ) {
+          return {
+            ...photo,
+            src: `/photos/${photo.src.split("/").pop()}`,
+          };
+        }
+        return photo;
+      });
+
+      // Return in consistent format that works with all components
+      return NextResponse.json({
+        success: true,
+        photos: normalizedPhotos,
+      });
     }
 
     // If no photos in DB, fallback to photos.json
     console.log(
       `API: No photos in DB, returning ${photoData.photos.length} from fallback JSON`,
     );
-    return NextResponse.json(photoData.photos);
+    return NextResponse.json({
+      success: true,
+      photos: photoData.photos,
+    });
   } catch (error) {
     console.error("Error fetching photos:", error);
     return NextResponse.json(

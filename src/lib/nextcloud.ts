@@ -66,8 +66,19 @@ export async function uploadPhoto(
   buffer: Buffer,
   filename: string,
 ): Promise<void> {
-  const path = getPhotoPath(filename);
-  await client.putFileContents(path, buffer);
+  try {
+    const path = getPhotoPath(filename);
+    console.log(`[Nextcloud] Uploading photo: ${filename} to path: ${path}`);
+    console.log(`[Nextcloud] Buffer size: ${buffer.length} bytes`);
+
+    // Get a fresh client for this operation
+    const uploadClient = getClient();
+    await uploadClient.putFileContents(path, buffer);
+    console.log(`[Nextcloud] Upload successful: ${path}`);
+  } catch (error) {
+    console.error(`[Nextcloud] Upload error for ${filename}:`, error);
+    throw error;
+  }
 }
 
 /**
@@ -94,6 +105,10 @@ export async function downloadPhoto(src: string): Promise<Buffer | null> {
       `Portfolio/${filename}`, // Portfolio folder at root
       `Photos/Portfolio/${filename}`, // Photos/Portfolio path
       `${NEXTCLOUD_PHOTOS_PATH.replace(/^\/+|\/+$/g, "")}/${filename}`, // Explicit NEXTCLOUD_PHOTOS_PATH
+      `/Photos/${filename}`, // Photos folder with leading slash
+      `/Portfolio/${filename}`, // Portfolio folder with leading slash
+      `/Photos/Portfolio/${filename}`, // Full path with leading slash
+      `/remote.php/webdav/${filename}`, // Direct webdav path
     ];
 
     console.log(`[Nextcloud] Attempting to download file (from src: ${src})`);
