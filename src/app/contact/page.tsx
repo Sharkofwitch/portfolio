@@ -22,12 +22,6 @@ export default function ContactPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<{
-    name?: string;
-    email?: string;
-    subject?: string;
-    message?: string;
-  }>({});
 
   const [error, setError] = useState<string | null>(null);
 

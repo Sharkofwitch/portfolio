@@ -122,7 +122,7 @@ export default function AboutPage() {
               </motion.p>
 
               <motion.p variants={item}>
-                As I continue to evolve as a photographer, I'm excited about my upcoming transition to the Fujifilm X-S20, which will become my primary camera. This fusion of digital precision and classic aesthetic represents my approach to photography - bridging contemporary technology with timeless technique.
+                As I continue to evolve as a photographer, I&apos;m excited about my upcoming transition to the Fujifilm X-S20, which will become my primary camera. This fusion of digital precision and classic aesthetic represents my approach to photography - bridging contemporary technology with timeless technique.
               </motion.p>
             </motion.div>
 
