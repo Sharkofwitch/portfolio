@@ -1,0 +1,64 @@
+{
+  "photos": [
+    {
+      "id": "1",
+      "title": "Sunset Overdrive",
+      "src": "/photos/image_35.jpg",
+      "alt": "Urban scene captured on film",
+      "width": 1600,
+      "height": 1067,
+      "year": "2025",
+      "location": "Cityscape",
+      "camera": "Yashica FX1 50mm f1.4",
+      "description": "A moment of tranquility amidst the urban hustle, captured on film"
+    },
+    {
+      "id": "2",
+      "title": "Urban Cherry Blossom Path",
+      "src": "/photos/image_36.jpg",
+      "alt": "Cherry blossoms in the city",
+      "width": 1600,
+      "height": 1067,
+      "year": "2025",
+      "location": "Cityscape",
+      "camera": "Yashica FX1 50mm f1.4",
+      "description": "A serene path lined with cherry blossoms, a fleeting moment of beauty"
+    },
+    {
+      "id": "3",
+      "title": "Moment in Time",
+      "src": "/photos/image_12.jpg",
+      "alt": "Candid schoolyard scene",
+      "width": 1600,
+      "height": 1067,
+      "year": "2025",
+      "location": "Street Photography",
+      "camera": "Yashica FX1 50mm f1.4",
+      "description": "A split-second frozen in film, where timing meets mechanical precision"
+    },
+    {
+      "id": "4",
+      "title": "Schoolyard Memories",
+      "src": "/photos/image_13.jpg",
+      "alt": "last day of school",
+      "width": 1600,
+      "height": 1067,
+      "year": "2025",
+      "location": "Schoolyard",
+      "camera": "Yashica FX1 50mm f1.4",
+      "description": "A nostalgic moment captured in the schoolyard, a blend of youth and nostalgia"
+    },
+    {
+      "id": "5",
+      "title": "Portrait of a Friend",
+      "src": "/photos/image_9.jpg",
+      "alt": "Portrait of a friend",
+      "width": 1600,
+      "height": 1067,
+      "year": "2025",
+      "location": "Portraiture",
+      "camera": "Yashica FX1 135mm f2.8",
+      "description": "A candid portrait of a friend, capturing the essence of friendship and spontaneity"
+    }
+  ]
+}
