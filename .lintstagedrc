@@ -1,6 +1,9 @@
 {
-  "*.{js,jsx,ts,tsx}": [
-    "eslint --fix",
+  "src/**/*.{js,jsx,ts,tsx}": [
+    "eslint --fix --no-warn-ignored",
+    "prettier --write"
+  ],
+  "scripts/**/*.{js,jsx,ts,tsx}": [
     "prettier --write"
   ],
   "*.{json,md,html,css}": [

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx prisma generate && npx prisma db push && npm run build",
+  "buildCommand": "node scripts/verify-vercel-env.js && npx prisma generate && npx prisma db push && npm run build",
   "installCommand": "npm install",
   "outputDirectory": ".next",
   "framework": "nextjs",
@@ -9,7 +9,7 @@
     }
   },
   "images": {
-    "domains": ["localhost"],
+    "domains": ["localhost", "cloud.szark.org"],
     "formats": ["image/avif", "image/webp"],
     "sizes": [256, 512, 768, 1024, 1280, 1920]
   },

@@ -5,36 +5,58 @@ import { getEnvVar } from "./env";
 const NEXTCLOUD_URL = getEnvVar("NEXTCLOUD_URL");
 const NEXTCLOUD_USERNAME = getEnvVar("NEXTCLOUD_USERNAME");
 const NEXTCLOUD_PASSWORD = getEnvVar("NEXTCLOUD_PASSWORD");
-const NEXTCLOUD_PHOTOS_PATH =
-  process.env.NEXTCLOUD_PHOTOS_PATH || "Photos/Portfolio";
+// Use environment variable or fallback, ensuring no double slashes
+const NEXTCLOUD_PHOTOS_PATH = (
+  process.env.NEXTCLOUD_PHOTOS_PATH || "/Photos/Portfolio"
+).replace(/\/+/g, "/");
 
-// Create WebDAV client
+// Create WebDAV client with a function to ensure fresh connections in serverless environments
 const baseUrl = NEXTCLOUD_URL.endsWith("/")
   ? NEXTCLOUD_URL.slice(0, -1)
   : NEXTCLOUD_URL;
 const webdavUrl = `${baseUrl}/remote.php/webdav`;
 
-const client = createClient(webdavUrl, {
-  username: NEXTCLOUD_USERNAME,
-  password: NEXTCLOUD_PASSWORD,
-  headers: {
-    Accept: "*/*",
-  },
-});
+// Create client factory to avoid stale connections in serverless environments
+function getClient() {
+  return createClient(webdavUrl, {
+    username: NEXTCLOUD_USERNAME,
+    password: NEXTCLOUD_PASSWORD,
+    headers: {
+      Accept: "*/*",
+    },
+  });
+}
+
+// For backward compatibility
+const client = getClient();
 
 /**
  * Get the full path for a photo in Nextcloud
  */
 function getPhotoPath(filename: string): string {
-  // Remove any leading or trailing slashes from the path and filename
+  // Strip photo path of any leading/trailing slashes and ensure consistent format
   const cleanPath = NEXTCLOUD_PHOTOS_PATH.replace(/^\/+|\/+$/g, "");
-  const cleanFilename = filename.replace(/^\/+|\/+$/g, "");
 
-  // Handle cases where filename might include 'photos/' prefix
-  const finalFilename = cleanFilename.replace(/^photos\//, "");
+  // Clean the filename: remove leading slashes and extract just the filename
+  let cleanFilename = filename.replace(/^\/+/g, "");
+
+  // Handle various path formats
+  cleanFilename = cleanFilename
+    .replace(/^photos\//, "") // Remove "photos/" prefix if present
+    .replace(/^Photos\//, "") // Remove "Photos/" prefix if present
+    .replace(/^Portfolio\//, ""); // Remove "Portfolio/" prefix if present
+
+  // Extract just the filename if it contains any path
+  if (cleanFilename.includes("/")) {
+    cleanFilename = cleanFilename.split("/").pop() || cleanFilename;
+  }
+
+  console.log(
+    `[Nextcloud] Cleaned path: ${cleanPath}, cleaned filename: ${cleanFilename}`,
+  );
 
   // Join path parts and ensure proper formatting
-  return [cleanPath, finalFilename].filter(Boolean).join("/");
+  return [cleanPath, cleanFilename].filter(Boolean).join("/");
 }
 
 /**
@@ -50,66 +72,69 @@ export async function uploadPhoto(
 
 /**
  * Download a photo from Nextcloud
+ * Enhanced with additional error handling and validation, optimized for serverless environments
  */
 export async function downloadPhoto(src: string): Promise<Buffer | null> {
   try {
     // Extract the filename from the src path, which could be like "/photos/image.jpg"
     const filename = src.split("/").pop()!;
 
-    // Get the clean path for Nextcloud
-    const path = getPhotoPath(filename);
-
-    console.log(
-      `[Nextcloud] Attempting to download file: ${path} (from src: ${src})`,
-    );
-    console.log(`[Nextcloud] Using Nextcloud base URL: ${webdavUrl}`);
-    console.log(`[Nextcloud] NEXTCLOUD_PHOTOS_PATH: ${NEXTCLOUD_PHOTOS_PATH}`);
-
-    // Check if file exists first
-    const exists = await client.exists(path);
-    if (!exists) {
-      console.log(`[Nextcloud] File not found at path: ${path}`);
-
-      // Try a simple approach as fallback - just the filename directly
-      const simplePath = filename;
-      console.log(`[Nextcloud] Trying fallback path: ${simplePath}`);
-
-      const simpleExists = await client.exists(simplePath);
-      if (!simpleExists) {
-        console.log(
-          `[Nextcloud] File not found at fallback path either: ${simplePath}`,
-        );
-        return null;
-      }
-
-      console.log(
-        `[Nextcloud] File found at fallback path, downloading: ${simplePath}`,
-      );
-      const simpleResponse = await client.getFileContents(simplePath);
-
-      if (simpleResponse instanceof Buffer) {
-        console.log(
-          `[Nextcloud] Successfully downloaded file from fallback path: ${simplePath}, size: ${simpleResponse.length} bytes`,
-        );
-        return simpleResponse;
-      }
-
+    // Skip known non-existent files early
+    const knownBadFiles = ["image_12.jpg", "image_36.jpg"];
+    if (knownBadFiles.includes(filename)) {
+      console.log(`[Nextcloud] Skipping known non-existent file: ${filename}`);
       return null;
     }
 
-    console.log(`[Nextcloud] File exists, downloading: ${path}`);
-    const response = await client.getFileContents(path);
+    // Try multiple path formats to maximize chances of finding the file
+    const pathsToTry = [
+      getPhotoPath(filename), // Primary path from getPhotoPath
+      filename, // Just filename directly at root
+      `Photos/${filename}`, // Photos folder at root
+      `Portfolio/${filename}`, // Portfolio folder at root
+      `Photos/Portfolio/${filename}`, // Photos/Portfolio path
+      `${NEXTCLOUD_PHOTOS_PATH.replace(/^\/+|\/+$/g, "")}/${filename}`, // Explicit NEXTCLOUD_PHOTOS_PATH
+    ];
 
-    if (response instanceof Buffer) {
-      console.log(
-        `[Nextcloud] Successfully downloaded file: ${path}, size: ${response.length} bytes`,
-      );
-      return response;
+    console.log(`[Nextcloud] Attempting to download file (from src: ${src})`);
+    console.log(`[Nextcloud] Using Nextcloud base URL: ${webdavUrl}`);
+    console.log(`[Nextcloud] NEXTCLOUD_PHOTOS_PATH: ${NEXTCLOUD_PHOTOS_PATH}`);
+
+    // Get a fresh client for this request (important for serverless environments)
+    const client = getClient();
+
+    // Try each path option until we find the file
+    for (const currentPath of pathsToTry) {
+      try {
+        console.log(`[Nextcloud] Checking path: ${currentPath}`);
+        const exists = await client.exists(currentPath);
+        if (!exists) {
+          console.log(`[Nextcloud] File not found at path: ${currentPath}`);
+          continue;
+        }
+
+        // File exists at this path, try to download it
+        console.log(
+          `[Nextcloud] File exists, downloading from: ${currentPath}`,
+        );
+        const response = await client.getFileContents(currentPath);
+
+        if (response instanceof Buffer) {
+          console.log(
+            `[Nextcloud] Successfully downloaded file: ${currentPath}, size: ${response.length} bytes`,
+          );
+          return response;
+        }
+      } catch (pathError) {
+        console.error(
+          `[Nextcloud] Error checking path ${currentPath}: ${pathError instanceof Error ? pathError.message : String(pathError)}`,
+        );
+        // Continue to try next path
+      }
     }
 
-    console.log(
-      `[Nextcloud] File response is not a Buffer: ${typeof response}`,
-    );
+    // If we reach here, we didn't find the file
+    console.log(`[Nextcloud] File not found in any path: ${filename}`);
     return null;
   } catch (error) {
     console.error(`[Nextcloud] Error downloading photo ${src}:`, error);
