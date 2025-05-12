@@ -145,10 +145,17 @@ export default function AdminPage() {
         console.log("Creating new photo entry");
       }
 
-      console.log(`Sending ${method} request to /api/photos`);
+      // Determine if we're in Vercel to use the optimized endpoint
+      const isVercelEnv = process.env.NEXT_PUBLIC_VERCEL === "1";
+      const endpoint =
+        !editingPhoto && isVercelEnv ? "/api/vercel-upload" : "/api/photos";
+
+      console.log(`Sending ${method} request to ${endpoint}`);
+      console.log(`Environment: ${isVercelEnv ? "Vercel" : "Development"}`);
+
       let responseData = null;
       try {
-        const response = await fetch("/api/photos", {
+        const response = await fetch(endpoint, {
           method,
           body: formData,
         });

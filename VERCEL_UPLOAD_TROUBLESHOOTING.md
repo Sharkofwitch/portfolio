@@ -6,18 +6,32 @@ This document provides information on resolving upload issues in the Vercel envi
 
 We've made several improvements to the photo upload system to fix issues with Vercel deployments:
 
-1. **Fixed undefined `client` variable** in the `photos` API route
-2. **Enhanced the Nextcloud upload function** with Vercel-specific optimizations:
+1. **Created specialized Vercel upload endpoint**:
+
+   - Direct `/api/vercel-upload` endpoint optimized for serverless environment
+   - Automatically used when in the Vercel environment
+   - Extended function execution time (60 seconds)
+   - Increased memory allocation (1024MB)
+
+2. **Enhanced Nextcloud upload for reliability**:
+
    - Added file size validation (increased to 50MB limit)
    - Implemented retry logic with exponential backoff (up to 3 attempts)
    - Skip directory existence checks in Vercel to reduce API calls
    - Added conditional verification based on environment
    - Improved error logging with detailed information
+
 3. **Added automatic image resizing** for large uploads:
+
    - Images over 5MB are automatically resized
    - Maintains aspect ratio while reducing dimensions
    - Reduces image quality if needed to meet size requirements
    - Provides detailed logs of the resizing process
+
+4. **Improved API flexibility**:
+   - Added support for both FormData and JSON requests
+   - Added special processing for Vercel-optimized workflow
+   - Enhanced error handling and reporting
 
 ## Testing Your Changes
 
@@ -33,9 +47,17 @@ export NEXTCLOUD_URL="your-nextcloud-url"
 export NEXTCLOUD_USERNAME="your-username"
 export NEXTCLOUD_PASSWORD="your-password"
 export NEXTCLOUD_PHOTOS_PATH="/your/photos/path"
+export VERCEL=1
+export NEXT_PUBLIC_VERCEL=1
 
 # Run the diagnostic tool
 node scripts/vercel-upload-diagnostic.js
+
+# Test image processing functionality
+node scripts/test-image-processing.js scripts/large-test-image.jpg
+
+# Test the complete upload flow with a deployment URL
+./scripts/test-photo-uploads.sh "https://your-vercel-deployment.vercel.app"
 ```
 
 The script will:
@@ -76,11 +98,23 @@ If issues persist:
 
 If you encounter a "File too large" error:
 
-1. The system will now automatically try to resize images over 5MB
-2. If auto-resizing fails, try manually resizing the image before uploading
+1. The system will now automatically process images with the following steps:
+   - Resize images over 2400×2400px to fit within those dimensions
+   - Maintain aspect ratio during resizing
+   - Reduce quality gradually if needed to meet size limits
+   - Provide detailed logs of the processing steps
+2. If auto-processing fails, try manually resizing the image before uploading
 3. The absolute maximum file size is now 50MB (increased from 5MB)
 4. Consider using image compression tools before uploading very large files
 5. For videos or extremely large files, consider using a different upload method directly to Nextcloud
+
+You can test the image processing functionality separately using:
+
+```bash
+node scripts/test-image-processing.js path/to/your/image.jpg
+```
+
+This will show you how the system would process your image before upload.
 
 ## Contact
 

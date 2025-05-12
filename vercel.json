@@ -8,6 +8,19 @@
       "PRISMA_GENERATE_DATAPROXY": "true"
     }
   },
+  "env": {
+    "NEXT_PUBLIC_VERCEL": "1"
+  },
+  "functions": {
+    "src/app/api/vercel-upload/route.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    },
+    "src/app/api/photos/route.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
   "images": {
     "domains": ["localhost", "cloud.szark.org"],
     "formats": ["image/avif", "image/webp"],

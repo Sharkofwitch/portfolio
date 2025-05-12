@@ -225,22 +225,69 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const formData = await req.formData();
-    const id = formData.get("id") as string;
+    // Support both JSON and FormData for better flexibility
+    let id: string | null = null;
+    let metadata: Record<string, string | number | null | undefined> = {};
+    let createNew = false;
 
-    if (!id) {
-      return NextResponse.json({ error: "Photo ID required" }, { status: 400 });
+    const contentType = req.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      // Handle JSON request from our vercel-optimized flow
+      const jsonData = await req.json();
+      id = jsonData.id || null;
+
+      // If coming from vercel-upload endpoint, src is provided but id isn't
+      if (!id && jsonData.src) {
+        createNew = true;
+        console.log(
+          "Creating new photo from JSON data with src:",
+          jsonData.src,
+        );
+
+        metadata = {
+          src: jsonData.src,
+          title: jsonData.title,
+          alt: jsonData.alt,
+          width: 1600, // default width
+          height: 1067, // default height
+          year: jsonData.year || null,
+          location: jsonData.location || null,
+          camera: jsonData.camera || null,
+          description: jsonData.description || null,
+        };
+      } else {
+        metadata = {
+          title: jsonData.title,
+          alt: jsonData.alt,
+          year: jsonData.year || null,
+          location: jsonData.location || null,
+          camera: jsonData.camera || null,
+          description: jsonData.description || null,
+        };
+      }
+    } else {
+      // Handle traditional FormData
+      const formData = await req.formData();
+      id = formData.get("id") as string;
+
+      if (!id) {
+        return NextResponse.json(
+          { error: "Photo ID required" },
+          { status: 400 },
+        );
+      }
+
+      // Extract metadata from form
+      metadata = {
+        title: formData.get("title") as string,
+        alt: formData.get("alt") as string,
+        year: (formData.get("year") as string) || undefined,
+        location: (formData.get("location") as string) || undefined,
+        camera: (formData.get("camera") as string) || undefined,
+        description: (formData.get("description") as string) || undefined,
+      };
     }
-
-    // Extract metadata from form
-    const metadata = {
-      title: formData.get("title") as string,
-      alt: formData.get("alt") as string,
-      year: (formData.get("year") as string) || undefined,
-      location: (formData.get("location") as string) || undefined,
-      camera: (formData.get("camera") as string) || undefined,
-      description: (formData.get("description") as string) || undefined,
-    };
 
     if (!metadata.title || !metadata.alt) {
       return NextResponse.json(
@@ -249,11 +296,21 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Update in database
-    const photo = await prisma.photo.update({
-      where: { id },
-      data: metadata,
-    });
+    // Create new or update existing
+    let photo;
+    if (createNew) {
+      console.log("Creating new photo in database:", metadata);
+      photo = await prisma.photo.create({
+        data: metadata,
+      });
+      console.log("New photo created:", photo);
+    } else {
+      console.log(`Updating photo with ID ${id}`);
+      photo = await prisma.photo.update({
+        where: { id: id! },
+        data: metadata,
+      });
+    }
 
     return NextResponse.json({
       success: true,

@@ -85,11 +85,11 @@ import("fs")
         throw new Error("File buffer is empty");
       }
 
-      // Validate buffer size (Vercel has payload limits)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      // Validate buffer size (Vercel has payload limits but we've increased them)
+      const maxSize = 50 * 1024 * 1024; // 50MB
       if (buffer.length > maxSize) {
         throw new Error(
-          `File too large: ${Math.round(buffer.length / 1024 / 1024)}MB (max 5MB)`,
+          `File too large: ${Math.round(buffer.length / 1024 / 1024)}MB (max 50MB)`,
         );
       }
 
@@ -216,11 +216,13 @@ import("fs")
         }
 
         // Test 3: Try uploading a real image if available
-        const testImagePath = path.join.join(__dirname, "test-image.jpg");
+        const testImagePath = path.join(__dirname, "test-image.jpg");
+        const largeImagePath = path.join(__dirname, "large-test-image.jpg");
 
         try {
+          // Try with regular test image first
           if (fs.existsSync(testImagePath)) {
-            console.log("\n🔍 TEST 3: Real image upload test");
+            console.log("\n🔍 TEST 3: Standard image upload test");
             try {
               const imageBuffer = fs.readFileSync(testImagePath);
               const imageFilename = `test-image-${Date.now()}.jpg`;
@@ -232,14 +234,63 @@ import("fs")
             }
           } else {
             console.log(
-              "\n🔍 TEST 3: Real image upload test - SKIPPED (no test-image.jpg found)",
+              "\n🔍 TEST 3: Standard image upload test - SKIPPED (no test-image.jpg found)",
+            );
+          }
+
+          // Try with large test image if available
+          if (fs.existsSync(largeImagePath)) {
+            console.log("\n🔍 TEST 4: Large image upload test");
+            try {
+              const imageBuffer = fs.readFileSync(largeImagePath);
+              console.log(
+                `📊 Large image size: ${Math.round(imageBuffer.length / 1024)} KB`,
+              );
+              const imageFilename = `large-test-image-${Date.now()}.jpg`;
+
+              // Import the image processor
+              const { default: sharp } = await import("sharp");
+
+              // Get image dimensions
+              const metadata = await sharp(imageBuffer).metadata();
+              console.log(
+                `📏 Image dimensions: ${metadata.width}x${metadata.height}`,
+              );
+
+              // Resize if needed
+              let processedBuffer = imageBuffer;
+              if (metadata.width > 2400 || metadata.height > 2400) {
+                console.log("🔄 Resizing large image...");
+                processedBuffer = await sharp(imageBuffer)
+                  .resize(2400, 2400, {
+                    fit: "inside",
+                    withoutEnlargement: true,
+                  })
+                  .jpeg({ quality: 85 })
+                  .toBuffer();
+
+                console.log(
+                  `📊 After resize: ${Math.round(processedBuffer.length / 1024)} KB`,
+                );
+              }
+
+              await uploadPhotoVercelStyle(processedBuffer, imageFilename);
+              console.log(
+                `✅ Large test image upload successful: ${imageFilename}`,
+              );
+            } catch (imageError) {
+              console.error(
+                "❌ Large test image upload failed:",
+                imageError.message,
+              );
+            }
+          } else {
+            console.log(
+              "\n🔍 TEST 4: Large image upload test - SKIPPED (no large-test-image.jpg found)",
             );
           }
         } catch (fsError) {
-          console.log(
-            "\n🔍 TEST 3: Real image upload test - ERROR checking for file:",
-            fsError.message,
-          );
+          console.log("\n❌ ERROR checking for test images:", fsError.message);
         }
 
         console.log("\n✅ Diagnostics completed!");
