@@ -3,7 +3,9 @@
 @tailwind utilities;
 
 @layer base {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box;
   }
 
@@ -61,20 +63,22 @@
     @apply transition-[filter] duration-300;
     filter: sepia(20%) brightness(105%) contrast(1.1);
   }
-  
+
   .vintage-filter:hover {
     filter: sepia(10%) brightness(100%) contrast(1.05);
   }
-  
+
   .hover-lift {
     @apply transform transition-all duration-300 ease-out;
   }
-  
+
   .hover-lift:hover {
     @apply -translate-y-1;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+    box-shadow:
+      0 10px 25px -5px rgba(0, 0, 0, 0.8),
+      0 10px 10px -5px rgba(0, 0, 0, 0.5);
   }
-  
+
   .vintage-border {
     @apply border border-white/10 shadow-md transition-all duration-300;
   }
@@ -86,38 +90,46 @@
   .text-shadow {
     text-shadow: 2px 2px 4px rgb(var(--shadow-color) / var(--shadow-opacity));
   }
-  
+
   /* Apple-inspired styles */
   .backdrop-apple {
     @apply backdrop-blur-xl bg-black/70;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
   }
-  
+
   .light .backdrop-apple {
     @apply bg-white/70;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
-  
+
   .glass-effect {
     background: rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.05);
   }
-  
+
   .light .glass-effect {
     background: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
-  
+
+  /* Admin form styles - works in both dark and light modes */
+  .admin-input {
+    @apply bg-[rgba(var(--background),0.8)] text-[rgb(var(--foreground))];
+    @apply border border-gray-400 dark:border-gray-600 rounded-md;
+    @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+    @apply dark:focus:ring-blue-400 dark:focus:border-blue-400;
+  }
+
   .parallax-card {
     transform-style: preserve-3d;
     transition: transform 0.1s ease;
   }
-  
+
   .parallax-content {
     transform: translateZ(20px);
   }
-  
+
   /* Additional Apple UI components */
   .apple-card {
     @apply rounded-2xl overflow-hidden relative bg-black/10 dark:bg-white/5;
@@ -125,14 +137,14 @@
     @apply shadow-apple dark:shadow-apple-dark;
     @apply transition-all duration-500 ease-apple-in;
   }
-  
+
   .apple-card:hover {
     @apply shadow-apple-hover dark:shadow-apple-hover-dark;
     @apply border-white/20 dark:border-white/10;
     @apply bg-black/15 dark:bg-white/10;
     @apply -translate-y-1;
   }
-  
+
   .apple-button {
     @apply px-6 py-2.5 rounded-full font-medium text-sm;
     @apply bg-black dark:bg-white text-white dark:text-black;
@@ -142,7 +154,7 @@
     @apply hover:bg-black/90 dark:hover:bg-white/90;
     @apply active:scale-95;
   }
-  
+
   .apple-button-secondary {
     @apply px-6 py-2.5 rounded-full font-medium text-sm;
     @apply bg-white/10 dark:bg-black/30 text-black dark:text-white;
@@ -151,7 +163,7 @@
     @apply transition-all duration-300 ease-apple-in;
     @apply active:scale-95;
   }
-  
+
   .apple-input {
     @apply px-4 py-2.5 rounded-xl text-black dark:text-white;
     @apply bg-white/80 dark:bg-black/50 backdrop-blur-sm;
@@ -160,22 +172,22 @@
     @apply placeholder-black/30 dark:placeholder-white/30;
     @apply transition-all duration-300;
   }
-  
+
   .frosted-glass {
     @apply bg-white/10 dark:bg-black/20 backdrop-blur-md;
     @apply border border-white/20 dark:border-white/5;
     @apply rounded-3xl shadow-apple dark:shadow-apple-dark;
   }
-  
+
   .apple-section {
     @apply py-16 md:py-24 px-6 md:px-10 relative overflow-hidden;
   }
-  
+
   .apple-heading {
     @apply text-3xl md:text-5xl lg:text-6xl font-medium tracking-tight;
     @apply bg-clip-text text-transparent bg-gradient-to-br from-gray-900 to-gray-600 dark:from-white dark:to-gray-300;
   }
-  
+
   .apple-text {
     @apply text-base md:text-lg font-light leading-relaxed;
     @apply text-gray-600 dark:text-gray-300;
@@ -184,7 +196,7 @@
 
 @layer utilities {
   .image-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6;
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-6;
   }
 
   .image-loading-pulse {
@@ -192,7 +204,7 @@
   }
 
   .image-loading-pulse::after {
-    content: '';
+    content: "";
     @apply absolute inset-0;
     @apply bg-gradient-to-r from-transparent via-black/20 to-transparent;
     @apply animate-shimmer;
@@ -200,6 +212,39 @@
 
   .light .image-loading-pulse::after {
     @apply via-white/20;
+  }
+
+  /* Mobile-specific utilities */
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left, 0);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right, 0);
+  }
+
+  .mobile-touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .mobile-padding {
+    @apply px-4 sm:px-6 md:px-8;
+  }
+
+  .no-tap-highlight {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  }
+
+  .touch-manipulation {
+    touch-action: manipulation;
   }
 
   @keyframes shimmer {

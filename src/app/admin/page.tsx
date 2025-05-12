@@ -276,9 +276,11 @@ export default function AdminPage() {
   if (loading || status === "loading") {
     return (
       <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 rounded-full border-4 border-t-transparent border-gray-700 animate-spin mb-4"></div>
-        <p className="text-gray-500 font-medium">Loading admin panel...</p>
-        <p className="text-gray-400 text-sm mt-2">
+        <div className="w-12 h-12 rounded-full border-4 border-t-transparent border-[rgb(var(--foreground))] animate-spin mb-4"></div>
+        <p className="text-[rgb(var(--foreground))] font-medium opacity-80">
+          Loading admin panel...
+        </p>
+        <p className="text-[rgb(var(--foreground))] text-sm mt-2 opacity-70">
           {status === "loading"
             ? "Authenticating user..."
             : "Loading content..."}
@@ -295,28 +297,32 @@ export default function AdminPage() {
   // Only render admin content if authenticated and admin
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Photo Management</h1>
+      <h1 className="text-3xl font-bold mb-8 text-[rgb(var(--foreground))]">
+        Photo Management
+      </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
-          <h2 className="text-xl font-semibold mb-4">
+          <h2 className="text-xl font-semibold mb-4 text-[rgb(var(--foreground))]">
             {editingPhoto ? "Edit Photo" : "Upload New Photo"}
           </h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {!editingPhoto && (
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-[rgb(var(--foreground))]">
                   Photo File
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   {...register("file", { required: !editingPhoto })}
-                  className="mt-1 block w-full"
+                  className="mt-1 block w-full admin-input file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-500 file:text-white hover:file:bg-blue-600"
                 />
                 {errors.file && (
-                  <span className="text-red-500">Photo file is required</span>
+                  <span className="text-red-500 dark:text-red-400 font-medium">
+                    Photo file is required
+                  </span>
                 )}
               </div>
             )}
@@ -348,75 +354,79 @@ export default function AdminPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))]">
                 Title
-              </label>
+              </label>{" "}
               <input
                 type="text"
                 {...register("title", { required: true })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full admin-input shadow-sm"
               />
               {errors.title && (
-                <span className="text-red-500">Title is required</span>
+                <span className="text-red-500 dark:text-red-400 font-medium">
+                  Title is required
+                </span>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))]">
                 Alt Text
               </label>
               <input
                 type="text"
                 {...register("alt", { required: true })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full admin-input shadow-sm"
                 placeholder="Descriptive text for accessibility"
               />
               {errors.alt && (
-                <span className="text-red-500">Alt text is required</span>
+                <span className="text-red-500 dark:text-red-400 font-medium">
+                  Alt text is required
+                </span>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))]">
                 Year
               </label>
               <input
                 type="text"
                 {...register("year")}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full admin-input shadow-sm"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))]">
                 Location
               </label>
               <input
                 type="text"
                 {...register("location")}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full admin-input shadow-sm"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))]">
                 Camera
               </label>
               <input
                 type="text"
                 {...register("camera")}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full admin-input shadow-sm"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[rgb(var(--foreground))]">
                 Description
               </label>
               <textarea
                 {...register("description")}
                 rows={3}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                className="mt-1 block w-full admin-input shadow-sm"
               />
             </div>
 
@@ -424,7 +434,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={uploading}
-                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:opacity-50"
+                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-blue-400 disabled:opacity-70 font-medium"
               >
                 {uploading
                   ? "Saving..."
@@ -441,7 +451,7 @@ export default function AdminPage() {
                     setPreviewUrl(null);
                     reset();
                   }}
-                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 font-medium"
                 >
                   Cancel Edit
                 </button>
@@ -451,7 +461,9 @@ export default function AdminPage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-4">Existing Photos</h2>
+          <h2 className="text-xl font-semibold mb-4 text-[rgb(var(--foreground))]">
+            Existing Photos
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {photos.map((photo) => (
               <motion.div
@@ -481,21 +493,23 @@ export default function AdminPage() {
                   height={200}
                   className="rounded-lg object-cover w-full"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                   <button
                     onClick={() => startEditing(photo)}
-                    className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600"
+                    className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 font-medium"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => deletePhoto(photo.id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600"
+                    className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 font-medium"
                   >
                     Delete
                   </button>
                 </div>
-                <p className="mt-2 font-medium">{photo.title}</p>
+                <p className="mt-2 font-medium text-[rgb(var(--foreground))]">
+                  {photo.title}
+                </p>
               </motion.div>
             ))}
           </div>

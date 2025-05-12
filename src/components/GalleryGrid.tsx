@@ -29,7 +29,7 @@ export default function GalleryGrid({ photos }: GalleryGridProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 relative">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-4 md:p-6 relative">
         {photos.map((photo, index) => (
           <PhotoCard
             key={photo.id}
@@ -98,7 +98,7 @@ function PhotoCard({
         scale: 1.02,
         transition: { duration: 0.2 },
       }}
-      className="group relative aspect-[4/3] overflow-hidden rounded-2xl vintage-border hover-lift bg-gray-100 dark:bg-gray-900 cursor-pointer"
+      className="group relative aspect-[4/3] overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl vintage-border hover-lift bg-gray-100 dark:bg-gray-900 cursor-pointer touch-manipulation no-tap-highlight"
       onClick={onClick}
       onMouseMove={handleMouseMove}
       style={{
@@ -159,7 +159,7 @@ function PhotoCard({
             className={`object-cover transition-all duration-500 group-hover:scale-105 vintage-filter ${
               isLoading ? "opacity-0" : "opacity-100"
             }`}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 640px) 95vw, (max-width: 768px) 45vw, (max-width: 1200px) 30vw, 400px"
             priority={index < 6}
             onLoadingComplete={() => setIsLoading(false)}
             onError={(e) => {
@@ -265,7 +265,7 @@ function PhotoModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center safe-top safe-bottom"
       onClick={handleBackdropClick}
     >
       {/* Backdrop */}
@@ -273,7 +273,7 @@ function PhotoModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 backdrop-blur-md bg-black/90"
+        className="absolute inset-0 backdrop-blur-md bg-black/95"
       />
 
       {/* Modal Content */}
@@ -283,13 +283,14 @@ function PhotoModal({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ type: "spring", damping: 20, stiffness: 300 }}
-        className="relative z-10 w-full max-w-5xl p-2 sm:p-4 overflow-hidden"
+        className="relative z-10 w-full max-w-5xl p-2 sm:p-4 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-black/80 backdrop-blur-sm text-white hover:bg-black/95 transition-colors duration-200 border border-white/20"
+          className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-black/80 backdrop-blur-sm text-white hover:bg-black/95 transition-colors duration-200 border border-white/20 touch-manipulation no-tap-highlight"
+          aria-label="Close image viewer"
         >
           <svg
             className="w-5 h-5"
@@ -309,13 +310,13 @@ function PhotoModal({
         {/* Image container */}
         <div
           ref={imageRef}
-          className={`relative w-full aspect-auto overflow-hidden bg-gray-900 rounded-xl shadow-lg border border-white/10 ${
+          className={`relative w-full aspect-auto overflow-hidden bg-gray-900 rounded-lg sm:rounded-xl shadow-lg border border-white/10 ${
             isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"
-          }`}
+          } touch-manipulation`}
           onClick={handleImageClick}
           onMouseMove={handleMouseMove}
         >
-          <div className="relative w-full h-[70vh] overflow-hidden">
+          <div className="relative w-full h-[60vh] sm:h-[70vh] overflow-hidden">
             <Image
               src={
                 photo.src.startsWith("/photos/")
@@ -346,35 +347,35 @@ function PhotoModal({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mt-4 text-white flex items-start justify-between p-2"
+          className="mt-4 text-white flex flex-col md:flex-row md:items-start md:justify-between p-2 safe-bottom"
         >
-          <div>
-            <h3 className="text-2xl font-serif">{photo.title}</h3>
-            <div className="flex flex-wrap gap-3 mt-2 text-sm text-white">
+          <div className="mb-3 md:mb-0">
+            <h3 className="text-xl sm:text-2xl font-serif">{photo.title}</h3>
+            <div className="flex flex-wrap gap-2 md:gap-3 mt-2 text-xs sm:text-sm text-white">
               {photo.year && (
-                <span className="rounded-full px-3 py-1 bg-white/10 backdrop-blur-md">
+                <span className="rounded-full px-2 sm:px-3 py-1 bg-white/10 backdrop-blur-md">
                   {photo.year}
                 </span>
               )}
               {photo.location && (
-                <span className="rounded-full px-3 py-1 bg-white/10 backdrop-blur-md">
+                <span className="rounded-full px-2 sm:px-3 py-1 bg-white/10 backdrop-blur-md">
                   {photo.location}
                 </span>
               )}
               {photo.camera && (
-                <span className="rounded-full px-3 py-1 bg-white/10 backdrop-blur-md">
+                <span className="rounded-full px-2 sm:px-3 py-1 bg-white/10 backdrop-blur-md">
                   {photo.camera}
                 </span>
               )}
             </div>
             {photo.description && (
-              <p className="mt-3 text-white/90 max-w-2xl">
+              <p className="mt-2 sm:mt-3 text-sm sm:text-base text-white/90 max-w-2xl line-clamp-3 sm:line-clamp-none">
                 {photo.description}
               </p>
             )}
           </div>
 
-          <div className="text-xs text-white/70 flex items-center gap-1">
+          <div className="text-xs text-white/70 flex items-center gap-1 self-start md:self-auto">
             <span className="font-mono bg-white/10 rounded px-2 py-1 backdrop-blur-md">
               {photo.width} × {photo.height}
             </span>
