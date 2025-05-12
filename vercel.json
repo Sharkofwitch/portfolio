@@ -5,7 +5,8 @@
   "framework": "nextjs",
   "images": {
     "domains": ["localhost"],
-    "formats": ["image/avif", "image/webp"]
+    "formats": ["image/avif", "image/webp"],
+    "sizes": [256, 512, 768, 1024, 1280, 1920]
   },
   "headers": [
     {
