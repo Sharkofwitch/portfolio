@@ -26,10 +26,15 @@ const client = createClient(webdavUrl, {
  * Get the full path for a photo in Nextcloud
  */
 function getPhotoPath(filename: string): string {
-  return `${NEXTCLOUD_PHOTOS_PATH}/${filename}`
-    .split("/")
-    .filter(Boolean)
-    .join("/");
+  // Remove any leading or trailing slashes from the path and filename
+  const cleanPath = NEXTCLOUD_PHOTOS_PATH.replace(/^\/+|\/+$/g, "");
+  const cleanFilename = filename.replace(/^\/+|\/+$/g, "");
+
+  // Handle cases where filename might include 'photos/' prefix
+  const finalFilename = cleanFilename.replace(/^photos\//, "");
+
+  // Join path parts and ensure proper formatting
+  return [cleanPath, finalFilename].filter(Boolean).join("/");
 }
 
 /**
