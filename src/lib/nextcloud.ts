@@ -65,6 +65,7 @@ function getPhotoPath(filename: string): string {
 
 /**
  * Upload a photo to Nextcloud
+ * Optimized for Vercel serverless environment
  */
 export async function uploadPhoto(
   buffer: Buffer,
@@ -75,48 +76,109 @@ export async function uploadPhoto(
     console.log(`[Nextcloud] Uploading photo: ${filename} to path: ${path}`);
     console.log(`[Nextcloud] Buffer size: ${buffer.length} bytes`);
 
+    const isVercelEnv = process.env.VERCEL === "1";
+    if (isVercelEnv) {
+      console.log("[Nextcloud] Running in Vercel environment");
+    }
+
     // Validate the buffer is not empty
     if (!buffer || buffer.length === 0) {
       console.error(`[Nextcloud] Empty buffer for ${filename}`);
       throw new Error("File buffer is empty");
     }
 
-    // Get a fresh client for this operation
-    const uploadClient = getClient();
-
-    // Ensure the parent directory exists
-    const dirPath = path.split("/").slice(0, -1).join("/");
-    console.log(`[Nextcloud] Ensuring directory exists: ${dirPath}`);
-
-    try {
-      // Check if directory exists, if not create it
-      const dirExists = await uploadClient.exists(dirPath);
-      if (!dirExists) {
-        console.log(
-          `[Nextcloud] Directory does not exist, creating: ${dirPath}`,
-        );
-        await uploadClient.createDirectory(dirPath);
-      }
-    } catch (dirError) {
-      console.log(
-        `[Nextcloud] Directory check/creation skipped: ${dirError.message}`,
+    // Validate buffer size (Vercel has payload limits)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (buffer.length > maxSize) {
+      console.error(
+        `[Nextcloud] File too large: ${buffer.length} bytes (max ${maxSize} bytes)`,
       );
-      // Continue with upload anyway as the directory might already exist
+      throw new Error(
+        `File too large: ${Math.round(buffer.length / 1024 / 1024)}MB (max 5MB)`,
+      );
     }
 
-    // Upload with explicit content type
-    console.log(`[Nextcloud] Starting upload to: ${path}`);
-    await uploadClient.putFileContents(path, buffer, {
-      contentLength: buffer.length,
-      overwrite: true,
-    });
+    // Get a fresh client for each operation to avoid stale connections in serverless
+    const uploadClient = getClient();
 
-    // Verify the file exists after upload
-    const exists = await uploadClient.exists(path);
-    if (exists) {
-      console.log(`[Nextcloud] Upload successful and verified: ${path}`);
+    // In Vercel, assume the directory exists to save a network round-trip
+    // For other environments, check and create if necessary
+    if (!isVercelEnv) {
+      const dirPath = path.split("/").slice(0, -1).join("/");
+      console.log(`[Nextcloud] Ensuring directory exists: ${dirPath}`);
+
+      try {
+        const dirExists = await uploadClient.exists(dirPath);
+        if (!dirExists) {
+          console.log(`[Nextcloud] Creating directory: ${dirPath}`);
+          await uploadClient.createDirectory(dirPath);
+        }
+      } catch (dirError) {
+        console.log(`[Nextcloud] Directory check skipped: ${dirError.message}`);
+        // Continue anyway as directory might exist
+      }
+    }
+
+    // Optimize upload for Vercel environment
+    console.log(`[Nextcloud] Starting upload to: ${path}`);
+
+    // Add retry logic for Vercel environment
+    const maxRetries = isVercelEnv ? 3 : 1;
+    let retryCount = 0;
+    let success = false;
+    let lastError;
+
+    while (retryCount < maxRetries && !success) {
+      try {
+        if (retryCount > 0) {
+          console.log(
+            `[Nextcloud] Retry attempt ${retryCount}/${maxRetries - 1}`,
+          );
+          // Get a fresh client for each retry
+          const retryClient = getClient();
+          await retryClient.putFileContents(path, buffer, {
+            contentLength: buffer.length,
+            overwrite: true,
+          });
+        } else {
+          await uploadClient.putFileContents(path, buffer, {
+            contentLength: buffer.length,
+            overwrite: true,
+          });
+        }
+        success = true;
+        console.log(
+          `[Nextcloud] Upload successful on attempt ${retryCount + 1}/${maxRetries}`,
+        );
+      } catch (uploadError) {
+        lastError = uploadError;
+        retryCount++;
+        console.log(
+          `[Nextcloud] Upload failed on attempt ${retryCount}/${maxRetries}: ${uploadError.message}`,
+        );
+
+        if (retryCount >= maxRetries) {
+          console.error(`[Nextcloud] All ${maxRetries} upload attempts failed`);
+          throw lastError;
+        }
+
+        // Exponential backoff wait before retry (1s, 2s, 4s)
+        const backoffTime = Math.min(1000 * Math.pow(2, retryCount - 1), 4000);
+        console.log(`[Nextcloud] Waiting ${backoffTime}ms before next attempt`);
+        await new Promise((resolve) => setTimeout(resolve, backoffTime));
+      }
+    }
+
+    // Skip verification in Vercel environment to reduce API calls
+    if (!isVercelEnv) {
+      const exists = await uploadClient.exists(path);
+      if (exists) {
+        console.log(`[Nextcloud] Upload successful and verified: ${path}`);
+      } else {
+        throw new Error(`File uploaded but not found at path: ${path}`);
+      }
     } else {
-      throw new Error(`File uploaded but not found at path: ${path}`);
+      console.log(`[Nextcloud] Upload completed for ${path}`);
     }
   } catch (error) {
     console.error(`[Nextcloud] Upload error for ${filename}:`, error);

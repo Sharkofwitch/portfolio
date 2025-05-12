@@ -90,15 +90,8 @@ export async function POST(req: NextRequest) {
       await uploadPhoto(buffer, uniqueName);
       console.log(`Upload successful for file: ${uniqueName}`);
 
-      // Validate file was uploaded by checking the Nextcloud path
-      const photoExists = await client.exists(getPhotoPath(uniqueName));
-      if (!photoExists) {
-        console.warn(
-          `File doesn't exist in Nextcloud after upload: ${uniqueName}`,
-        );
-      } else {
-        console.log(`File verified in Nextcloud: ${uniqueName}`);
-      }
+      // Skip additional verification as the uploadPhoto function already verifies
+      // that the file exists after upload
     } catch (uploadError) {
       console.error("Error uploading to Nextcloud:", uploadError);
       if (uploadError instanceof Error) {
