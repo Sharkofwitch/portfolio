@@ -1,27 +1,32 @@
-import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  const token = await getToken({ req: request });
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
-  const isLoginPage = request.nextUrl.pathname.startsWith('/admin/login');
+  const token = await getToken({
+    req: request,
+    secureCookie: process.env.NODE_ENV === "production",
+  });
+  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
+  const isLoginPage = request.nextUrl.pathname.startsWith("/admin/login");
 
-  // Debug logging
-  console.log('Middleware check:', {
+  // Enhanced debug logging
+  console.log("Middleware check:", {
     path: request.nextUrl.pathname,
     isAdminRoute,
     isLoginPage,
     hasToken: !!token,
-    role: token?.role
+    role: token?.role,
+    sessionToken: !!request.cookies.get("next-auth.session-token"),
+    cookieCount: request.cookies.getAll().length,
   });
 
   // Allow access to login page
   if (isLoginPage) {
-    if (token && token.role === 'admin') {
+    if (token && token.role === "admin") {
       // If user is already logged in as admin, redirect to admin dashboard
-      console.log('Already logged in, redirecting to admin dashboard');
-      return NextResponse.redirect(new URL('/admin', request.url));
+      console.log("Already logged in, redirecting to admin dashboard");
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
     return NextResponse.next();
   }
@@ -30,22 +35,22 @@ export async function middleware(request: NextRequest) {
   if (isAdminRoute) {
     if (!token) {
       // Redirect unauthenticated users to login page
-      console.log('No token found, redirecting to login');
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+      console.log("No token found, redirecting to login");
+      return NextResponse.redirect(new URL("/admin/login", request.url));
     }
-    if (token.role !== 'admin') {
+    if (token.role !== "admin") {
       // Redirect non-admin users to home page
-      console.log('Not admin role, redirecting to home');
-      return NextResponse.redirect(new URL('/', request.url));
+      console.log("Not admin role, redirecting to home");
+      return NextResponse.redirect(new URL("/", request.url));
     }
-    
+
     // Admin user accessing admin route - allow
-    console.log('Admin access granted to admin route');
+    console.log("Admin access granted to admin route");
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*']
+  matcher: ["/admin/:path*"],
 };

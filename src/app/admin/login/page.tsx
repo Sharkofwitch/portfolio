@@ -44,11 +44,26 @@ export default function LoginPage() {
           successElement.classList.remove("hidden");
         }
 
-        // Ensure session is fully established before redirect
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        console.log("Redirecting to admin dashboard...");
-        router.replace("/admin");
-        router.refresh();
+        try {
+          // Ensure session is fully established before redirect with a longer timeout
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+
+          // Force a session update before redirect
+          console.log("Forcing session update before redirect...");
+          const response = await fetch("/api/auth/session");
+          const session = await response.json();
+          console.log("Current session state:", session);
+
+          console.log("Redirecting to admin dashboard...");
+          // Using push instead of replace for more reliable navigation
+          router.push("/admin");
+          // Refresh after a short delay to ensure the page reloads with the new session
+          setTimeout(() => router.refresh(), 500);
+        } catch (error) {
+          console.error("Error during redirect:", error);
+          // Fallback to direct window location change if router fails
+          window.location.href = "/admin";
+        }
       }
     } catch (error) {
       console.error("Login error:", error);

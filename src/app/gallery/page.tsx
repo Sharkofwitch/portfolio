@@ -25,9 +25,21 @@ export default function GalleryPage() {
         const response = await fetch("/api/photos");
         const data = await response.json();
 
-        const sortedData = [...data].sort((a, b) => {
-          const dateA = new Date(a.createdAt);
-          const dateB = new Date(b.createdAt);
+        // Check if the response has a photos property (the expected format)
+        const photosData = data.photos || data;
+
+        console.log("Photos data received:", photosData);
+
+        if (!Array.isArray(photosData)) {
+          console.error("Received invalid data format:", photosData);
+          setError("Invalid data format received from server");
+          setLoading(false);
+          return;
+        }
+
+        const sortedData = [...photosData].sort((a, b) => {
+          const dateA = new Date(a.createdAt || Date.now());
+          const dateB = new Date(b.createdAt || Date.now());
           return dateB.getTime() - dateA.getTime();
         });
 
@@ -55,19 +67,24 @@ export default function GalleryPage() {
               scale,
             }}
           >
-            <Image
-              src={
-                photos[0]?.src
-                  ? photos[0].src.startsWith("/photos/")
-                    ? photos[0].src.replace("/photos/", "/api/photos/")
-                    : photos[0].src
-                  : "/api/photos/image_1.jpg"
-              }
-              alt="Gallery Header"
-              fill
-              className="object-cover"
-              priority
-            />
+            {photos[0]?.src ? (
+              <Image
+                src={
+                  photos[0]?.src?.startsWith("/photos/")
+                    ? `/api/photos/${photos[0].src.split("/").pop()}`
+                    : photos[0]?.src?.startsWith("/api/photos/")
+                      ? photos[0].src
+                      : `/api/photos/${photos[0].src}`
+                }
+                alt="Gallery Header"
+                fill
+                className="object-cover"
+                priority
+                onError={() => {
+                  console.error("Failed to load header image:", photos[0].src);
+                }}
+              />
+            ) : null}
             <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/80" />
           </motion.div>
         )}

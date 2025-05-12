@@ -102,17 +102,16 @@ export async function GET() {
     });
 
     if (dbPhotos.length > 0) {
-      return NextResponse.json({
-        success: true,
-        photos: dbPhotos,
-      });
+      console.log(`API: Returning ${dbPhotos.length} photos from database`);
+      // Return in format expected by gallery
+      return NextResponse.json(dbPhotos);
     }
 
     // If no photos in DB, fallback to photos.json
-    return NextResponse.json({
-      success: true,
-      photos: photoData.photos,
-    });
+    console.log(
+      `API: No photos in DB, returning ${photoData.photos.length} from fallback JSON`,
+    );
+    return NextResponse.json(photoData.photos);
   } catch (error) {
     console.error("Error fetching photos:", error);
     return NextResponse.json(

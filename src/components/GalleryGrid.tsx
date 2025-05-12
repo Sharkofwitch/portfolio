@@ -67,6 +67,14 @@ function PhotoCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
+  // Validate the photo object has required properties
+  useEffect(() => {
+    if (!photo || !photo.src) {
+      console.error("Invalid photo data:", photo);
+      setError(true);
+    }
+  }, [photo]);
+
   // Subtle parallax effect
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -122,25 +130,33 @@ function PhotoCard({
 
       {/* Image */}
       <div className="absolute inset-0 overflow-hidden">
-        <Image
-          src={photo.src.replace("/photos/", "/api/photos/")}
-          alt={photo.alt}
-          fill
-          className={`object-cover transition-all duration-500 group-hover:scale-105 vintage-filter ${
-            isLoading ? "opacity-0" : "opacity-100"
-          }`}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          priority={index < 6}
-          onLoadingComplete={() => setIsLoading(false)}
-          onError={(e) => {
-            console.error("Error loading image:", photo.src, e);
-            setIsLoading(false);
-            setError(true);
-          }}
-          style={{
-            transform: `scale(1.1) translateX(${mousePosition.x * -10}px) translateY(${mousePosition.y * -10}px)`,
-          }}
-        />
+        {photo.src && (
+          <Image
+            src={
+              photo.src.startsWith("/photos/")
+                ? `/api/photos/${photo.src.split("/").pop()}`
+                : photo.src.startsWith("/api/photos/")
+                  ? photo.src
+                  : `/api/photos/${photo.src}`
+            }
+            alt={photo.alt || "Gallery image"}
+            fill
+            className={`object-cover transition-all duration-500 group-hover:scale-105 vintage-filter ${
+              isLoading ? "opacity-0" : "opacity-100"
+            }`}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            priority={index < 6}
+            onLoadingComplete={() => setIsLoading(false)}
+            onError={(e) => {
+              console.error("Error loading image:", photo.src, e);
+              setIsLoading(false);
+              setError(true);
+            }}
+            style={{
+              transform: `scale(1.1) translateX(${mousePosition.x * -10}px) translateY(${mousePosition.y * -10}px)`,
+            }}
+          />
+        )}
       </div>
 
       {/* Overlay */}
