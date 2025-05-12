@@ -88,13 +88,13 @@ export async function uploadPhoto(
     }
 
     // Validate buffer size (Vercel has payload limits)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 50 * 1024 * 1024; // 50MB (increased from 5MB)
     if (buffer.length > maxSize) {
       console.error(
         `[Nextcloud] File too large: ${buffer.length} bytes (max ${maxSize} bytes)`,
       );
       throw new Error(
-        `File too large: ${Math.round(buffer.length / 1024 / 1024)}MB (max 5MB)`,
+        `File too large: ${Math.round(buffer.length / 1024 / 1024)}MB (max 50MB)`,
       );
     }
 

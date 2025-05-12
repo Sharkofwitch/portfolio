@@ -85,9 +85,30 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      // Process the image if needed (will auto-resize if over size limit)
+      let processedBuffer = buffer;
+      if (buffer.length > 5 * 1024 * 1024) {
+        // If over 5MB
+        try {
+          console.log(
+            `File is large (${Math.round(buffer.length / 1024 / 1024)}MB), attempting to resize...`,
+          );
+          // Dynamically import the image processor to keep it out of the main bundle
+          const { processImage } = await import("@/lib/image-processor");
+          processedBuffer = await processImage(buffer, 30); // Allow up to 30MB after processing
+          console.log(
+            `Image processed. New size: ${Math.round(processedBuffer.length / 1024 / 1024)}MB`,
+          );
+        } catch (processingError) {
+          console.error("Error processing large image:", processingError);
+          // Continue with the original buffer if processing fails
+          console.log("Continuing with unprocessed image");
+        }
+      }
+
       // Upload using buffer and uniqueName
       console.log(`Starting upload to Nextcloud with filename: ${uniqueName}`);
-      await uploadPhoto(buffer, uniqueName);
+      await uploadPhoto(processedBuffer, uniqueName);
       console.log(`Upload successful for file: ${uniqueName}`);
 
       // Skip additional verification as the uploadPhoto function already verifies
