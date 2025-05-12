@@ -74,8 +74,8 @@ export default function AdminPage() {
               }, 500);
               return;
             }
-          } catch (e) {
-            console.error("Error refreshing session:", e);
+          } catch (error) {
+            console.error("Error refreshing session:", error);
           }
           window.location.href = "/";
         } else if (session.user.role !== "admin") {
@@ -104,16 +104,35 @@ export default function AdminPage() {
   const onSubmit = async (data: PhotoFormData) => {
     try {
       setUploading(true);
+      console.log("Starting upload process with data:", data);
 
       const formData = new FormData();
+
+      // Handle file upload for new photos
       if (data.file?.[0]) {
-        formData.append("file", data.file[0]);
+        const file = data.file[0];
+        console.log("File selected:", file.name, file.size, "bytes", file.type);
+
+        // Clone the file to ensure we're not using a potentially stale reference
+        const fileBlob = new Blob([await file.arrayBuffer()], {
+          type: file.type,
+        });
+        const freshFile = new File([fileBlob], file.name, { type: file.type });
+
+        formData.append("file", freshFile);
+        console.log("File appended to FormData");
+      } else if (!editingPhoto) {
+        console.error("No file selected for new photo upload");
+        alert("Please select a file to upload");
+        setUploading(false);
+        return;
       }
 
       // Add all metadata fields to FormData
       Object.entries(data).forEach(([key, value]) => {
         if (key !== "file" && value !== undefined && value !== "") {
           formData.append(key, value.toString());
+          console.log(`Added form field: ${key}=${value.toString()}`);
         }
       });
 
@@ -121,24 +140,53 @@ export default function AdminPage() {
       const method = editingPhoto ? "PUT" : "POST";
       if (editingPhoto) {
         formData.append("id", editingPhoto.id);
+        console.log(`Editing photo with ID: ${editingPhoto.id}`);
+      } else {
+        console.log("Creating new photo entry");
       }
 
-      const response = await fetch("/api/photos", {
-        method,
-        body: formData,
-      });
+      console.log(`Sending ${method} request to /api/photos`);
+      let responseData = null;
+      try {
+        const response = await fetch("/api/photos", {
+          method,
+          body: formData,
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to save photo");
+        // Try to parse response JSON
+        responseData = await response.json().catch((e) => {
+          console.error("Failed to parse response JSON:", e);
+          return null;
+        });
+
+        console.log("API response:", response.status, responseData);
+
+        if (!response.ok) {
+          const errorMessage = responseData?.error || "Failed to save photo";
+          const errorDetails = responseData?.details
+            ? `: ${responseData.details}`
+            : "";
+          throw new Error(`${errorMessage}${errorDetails}`);
+        }
+
+        console.log("Photo saved successfully");
+        reset();
+        setPreviewUrl(null);
+        setEditingPhoto(null);
+
+        // Delay fetch to give backend time to process
+        setTimeout(() => {
+          fetchPhotos();
+        }, 500);
+      } catch (apiError) {
+        console.error("API error:", apiError);
+        throw apiError;
       }
-
-      reset();
-      setPreviewUrl(null);
-      setEditingPhoto(null);
-      fetchPhotos();
     } catch (error) {
       console.error("Error handling photo:", error);
-      alert("Failed to save photo. Please try again.");
+      alert(
+        `Failed to save photo: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     } finally {
       setUploading(false);
     }
@@ -146,19 +194,40 @@ export default function AdminPage() {
 
   const fetchPhotos = async () => {
     try {
+      console.log("Fetching photos for admin panel...");
       const response = await fetch("/api/photos");
+
       if (response.ok) {
         const data = await response.json();
         console.log("Admin: Photos data received:", data);
 
         if (Array.isArray(data)) {
+          console.log(`Setting ${data.length} photos from array`);
           setPhotos(data);
         } else if (data.photos) {
+          console.log(`Setting ${data.photos.length} photos from data.photos`);
           setPhotos(data.photos);
         } else if (data.success && data.photos) {
+          console.log(
+            `Setting ${data.photos.length} photos from data.success.photos`,
+          );
           setPhotos(data.photos);
+        } else {
+          console.warn("Unexpected photos data format:", data);
         }
         return data;
+      } else {
+        console.error(
+          "Failed to fetch photos:",
+          response.status,
+          response.statusText,
+        );
+        try {
+          const errorData = await response.json();
+          console.error("Error details:", errorData);
+        } catch {
+          // Ignore parse errors
+        }
       }
     } catch (error) {
       console.error("Error fetching photos:", error);

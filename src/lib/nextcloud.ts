@@ -1,14 +1,18 @@
 import { createClient } from "webdav";
-import { getEnvVar } from "./env";
 
-// Get environment variables
-const NEXTCLOUD_URL = getEnvVar("NEXTCLOUD_URL");
-const NEXTCLOUD_USERNAME = getEnvVar("NEXTCLOUD_USERNAME");
-const NEXTCLOUD_PASSWORD = getEnvVar("NEXTCLOUD_PASSWORD");
+// Get environment variables directly - more resilient against module loader issues
+const NEXTCLOUD_URL = process.env.NEXTCLOUD_URL || "";
+const NEXTCLOUD_USERNAME = process.env.NEXTCLOUD_USERNAME || "";
+const NEXTCLOUD_PASSWORD = process.env.NEXTCLOUD_PASSWORD || "";
 // Use environment variable or fallback, ensuring no double slashes
 const NEXTCLOUD_PHOTOS_PATH = (
   process.env.NEXTCLOUD_PHOTOS_PATH || "/Photos/Portfolio"
 ).replace(/\/+/g, "/");
+
+// Validate required environment variables
+if (!NEXTCLOUD_URL || !NEXTCLOUD_USERNAME || !NEXTCLOUD_PASSWORD) {
+  console.error("Missing required Nextcloud environment variables");
+}
 
 // Create WebDAV client with a function to ensure fresh connections in serverless environments
 const baseUrl = NEXTCLOUD_URL.endsWith("/")
@@ -71,12 +75,55 @@ export async function uploadPhoto(
     console.log(`[Nextcloud] Uploading photo: ${filename} to path: ${path}`);
     console.log(`[Nextcloud] Buffer size: ${buffer.length} bytes`);
 
+    // Validate the buffer is not empty
+    if (!buffer || buffer.length === 0) {
+      console.error(`[Nextcloud] Empty buffer for ${filename}`);
+      throw new Error("File buffer is empty");
+    }
+
     // Get a fresh client for this operation
     const uploadClient = getClient();
-    await uploadClient.putFileContents(path, buffer);
-    console.log(`[Nextcloud] Upload successful: ${path}`);
+
+    // Ensure the parent directory exists
+    const dirPath = path.split("/").slice(0, -1).join("/");
+    console.log(`[Nextcloud] Ensuring directory exists: ${dirPath}`);
+
+    try {
+      // Check if directory exists, if not create it
+      const dirExists = await uploadClient.exists(dirPath);
+      if (!dirExists) {
+        console.log(
+          `[Nextcloud] Directory does not exist, creating: ${dirPath}`,
+        );
+        await uploadClient.createDirectory(dirPath);
+      }
+    } catch (dirError) {
+      console.log(
+        `[Nextcloud] Directory check/creation skipped: ${dirError.message}`,
+      );
+      // Continue with upload anyway as the directory might already exist
+    }
+
+    // Upload with explicit content type
+    console.log(`[Nextcloud] Starting upload to: ${path}`);
+    await uploadClient.putFileContents(path, buffer, {
+      contentLength: buffer.length,
+      overwrite: true,
+    });
+
+    // Verify the file exists after upload
+    const exists = await uploadClient.exists(path);
+    if (exists) {
+      console.log(`[Nextcloud] Upload successful and verified: ${path}`);
+    } else {
+      throw new Error(`File uploaded but not found at path: ${path}`);
+    }
   } catch (error) {
     console.error(`[Nextcloud] Upload error for ${filename}:`, error);
+    if (error instanceof Error) {
+      console.error(`[Nextcloud] Error details: ${error.message}`);
+      console.error(`[Nextcloud] Error stack: ${error.stack}`);
+    }
     throw error;
   }
 }

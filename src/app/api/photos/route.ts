@@ -55,18 +55,64 @@ export async function POST(req: NextRequest) {
 
     // Upload to Nextcloud
     console.log(`Uploading to Nextcloud... File size: ${file.size} bytes`);
-    const arrayBuffer = await file.arrayBuffer();
-    console.log(`ArrayBuffer obtained, size: ${arrayBuffer.byteLength} bytes`);
-    const buffer = Buffer.from(arrayBuffer);
-    console.log(`Buffer created, size: ${buffer.length} bytes`);
+    console.log(`File type: ${file.type}`);
 
     try {
+      // Get file data - using synchronous execution to avoid any issues with async boundaries
+      console.log("Converting file to array buffer...");
+      const arrayBuffer = await file.arrayBuffer();
+      console.log(
+        `ArrayBuffer obtained, size: ${arrayBuffer.byteLength} bytes`,
+      );
+
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+        console.error("Empty array buffer received");
+        return NextResponse.json(
+          { error: "Empty file content" },
+          { status: 400 },
+        );
+      }
+
+      console.log("Converting array buffer to Node.js Buffer...");
+      const buffer = Buffer.from(arrayBuffer);
+      console.log(`Buffer created, size: ${buffer.length} bytes`);
+
+      if (!buffer || buffer.length === 0) {
+        console.error("Empty buffer created from array buffer");
+        return NextResponse.json(
+          { error: "Failed to process file" },
+          { status: 500 },
+        );
+      }
+
+      // Upload using buffer and uniqueName
+      console.log(`Starting upload to Nextcloud with filename: ${uniqueName}`);
       await uploadPhoto(buffer, uniqueName);
       console.log(`Upload successful for file: ${uniqueName}`);
+
+      // Validate file was uploaded by checking the Nextcloud path
+      const photoExists = await client.exists(getPhotoPath(uniqueName));
+      if (!photoExists) {
+        console.warn(
+          `File doesn't exist in Nextcloud after upload: ${uniqueName}`,
+        );
+      } else {
+        console.log(`File verified in Nextcloud: ${uniqueName}`);
+      }
     } catch (uploadError) {
       console.error("Error uploading to Nextcloud:", uploadError);
+      if (uploadError instanceof Error) {
+        console.error("Error details:", uploadError.message);
+        console.error("Error stack:", uploadError.stack);
+      }
       return NextResponse.json(
-        { error: "Failed to upload to storage" },
+        {
+          error: "Failed to upload to storage",
+          details:
+            uploadError instanceof Error
+              ? uploadError.message
+              : "Unknown error",
+        },
         { status: 500 },
       );
     }
