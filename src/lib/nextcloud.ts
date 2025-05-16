@@ -114,7 +114,9 @@ export async function uploadPhoto(
           await uploadClient.createDirectory(dirPath);
         }
       } catch (dirError) {
-        console.log(`[Nextcloud] Directory check skipped: ${dirError.message}`);
+        console.log(`[Nextcloud] Directory check skipped: ${
+          dirError instanceof Error ? dirError.message : String(dirError)
+        }`);
         // Continue anyway as directory might exist
       }
     }
@@ -154,7 +156,9 @@ export async function uploadPhoto(
         lastError = uploadError;
         retryCount++;
         console.log(
-          `[Nextcloud] Upload failed on attempt ${retryCount}/${maxRetries}: ${uploadError.message}`,
+          `[Nextcloud] Upload failed on attempt ${retryCount}/${maxRetries}: ${
+            uploadError instanceof Error ? uploadError.message : String(uploadError)
+          }`,
         );
 
         if (retryCount >= maxRetries) {
