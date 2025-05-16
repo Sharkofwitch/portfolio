@@ -1,28 +1,20 @@
-import type { Metadata } from "next";
-import { Geist } from "next/font/google";
 import "./globals.css";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import "@/styles/social-interactions.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AuthProvider from "@/components/AuthProvider";
+import ToastProvider from "@/components/ToastProvider";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
-const geist = Geist({
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Jakob Szarkowicz - Photography Portfolio",
   description:
     "A visual journey through digital and analog photography, captured through contemporary and classic lenses.",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    viewportFit: "cover",
-  },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
   icons: {
     icon: [
       { url: "/camera-favicon.svg", type: "image/svg+xml" },
@@ -30,6 +22,13 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/camera-favicon.svg", type: "image/svg+xml" }],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -40,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geist.className} dark`}
+      className={`${inter.className} dark`}
       suppressHydrationWarning
     >
       <body
@@ -48,14 +47,18 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          {/* Header and Footer won't be shown in admin pages */}
-          {!children?.toString().includes("/admin") && <Header />}
-          <main
-            className={`flex-grow ${!children?.toString().includes("/admin") ? "pt-16 md:pt-20" : ""}`}
-          >
-            {children}
-          </main>
-          {!children?.toString().includes("/admin") && <Footer />}
+          <ErrorBoundary>
+            <ToastProvider>
+              {!children?.toString().includes("/admin") && <Header />}
+              <main
+                className={`flex-grow ${!children?.toString().includes("/admin") ? "pt-16 md:pt-20" : ""}`}
+              >
+                <ErrorBoundary>{children}</ErrorBoundary>
+              </main>
+              {!children?.toString().includes("/admin") && <Footer />}
+              <Analytics />
+            </ToastProvider>
+          </ErrorBoundary>
         </AuthProvider>
       </body>
     </html>

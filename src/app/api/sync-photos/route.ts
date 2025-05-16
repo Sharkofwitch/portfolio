@@ -43,8 +43,16 @@ export async function GET(request: NextRequest) {
     const cleanPath = NEXTCLOUD_PHOTOS_PATH.replace(/^\/+|\/+$/g, "");
     const directoryContents = await client.getDirectoryContents(cleanPath);
 
-    const nextcloudPhotos = directoryContents
-      .filter((item) => !item.type.includes("directory"))
+    // Handle both direct array and ResponseDataDetailed formats
+    const fileList = Array.isArray(directoryContents)
+      ? directoryContents
+      : "data" in directoryContents
+        ? directoryContents.data
+        : [];
+
+    // Apply proper typing to file items
+    const nextcloudPhotos = fileList
+      .filter((item: { type: string }) => !item.type.includes("directory"))
       .map((file: { basename: string; filename: string; type: string }) => ({
         filename: file.basename,
         path: file.filename,
@@ -52,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     // Extract just the filenames for easy comparison
     const availablePhotoFilenames = new Set(
-      nextcloudPhotos.map((p) => p.filename),
+      nextcloudPhotos.map((p: { filename: string }) => p.filename),
     );
 
     // Step 2: Get all photos from database
@@ -82,7 +90,8 @@ export async function GET(request: NextRequest) {
       dbPhotos.map((p) => p.src.split("/").pop()),
     );
     const photosToAdd = nextcloudPhotos.filter(
-      (ncPhoto) => !dbPhotoFilenames.has(ncPhoto.filename),
+      (ncPhoto: { filename: string }) =>
+        !dbPhotoFilenames.has(ncPhoto.filename),
     );
 
     return NextResponse.json({
@@ -95,7 +104,9 @@ export async function GET(request: NextRequest) {
           after: dbPhotos.length - photosToRemove.length,
         },
         removedPhotos: removeResults,
-        availableToAdd: photosToAdd.map((p) => p.filename),
+        availableToAdd: photosToAdd.map(
+          (p: { filename: string }) => p.filename,
+        ),
       },
     });
   } catch (error) {

@@ -4,15 +4,37 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import React, { useState, useRef, useEffect } from "react";
 import { PhotoMetadata } from "@/lib/photo-types";
+import { useRouter } from "next/navigation";
+import { SocialActions } from "@/components/SocialInteractions";
 
 interface GalleryGridProps {
   photos: PhotoMetadata[];
 }
 
 export default function GalleryGrid({ photos }: GalleryGridProps) {
+  const router = useRouter();
+  const [visiblePhotos, setVisiblePhotos] = useState<PhotoMetadata[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoMetadata | null>(
     null,
   );
+
+  // Lazy load photos for better performance
+  useEffect(() => {
+    setIsLoading(true);
+
+    // Load first batch immediately
+    const initialBatch = photos.slice(0, 8);
+    setVisiblePhotos(initialBatch);
+
+    // Load the rest with a small delay for better initial load performance
+    const timer = setTimeout(() => {
+      setVisiblePhotos(photos);
+      setIsLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [photos]);
 
   // When a photo is selected, prevent body scrolling
   useEffect(() => {
@@ -27,17 +49,92 @@ export default function GalleryGrid({ photos }: GalleryGridProps) {
     };
   }, [selectedPhoto]);
 
+  // Function to navigate to individual photo page
+  const handleNavigateToPhotoPage = (
+    e: React.MouseEvent,
+    photo: PhotoMetadata,
+  ) => {
+    e.stopPropagation(); // Prevent modal from opening
+    const slug = `${photo.title?.toLowerCase().replace(/\s+/g, "-") || "photo"}-${
+      photo.id
+    }`;
+    router.push(`/gallery/${slug}`);
+  };
+
+  // Container variants for staggered animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  // Item variants for staggered animations
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  };
+
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-4 md:p-6 relative">
-        {photos.map((photo, index) => (
-          <PhotoCard
-            key={photo.id}
-            photo={photo}
-            index={index}
-            onClick={() => setSelectedPhoto(photo)}
-          />
-        ))}
+      <div className="container mx-auto px-4 py-8">
+        {isLoading && photos.length > 0 && (
+          <div className="flex justify-center mb-8">
+            <motion.div
+              animate={{
+                scale: [1, 1.05, 1],
+                opacity: [0.7, 1, 0.7],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="text-gray-500 dark:text-gray-400"
+            >
+              <svg
+                className="w-10 h-10"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </motion.div>
+          </div>
+        )}
+
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+        >
+          {visiblePhotos.map((photo) => (
+            <PhotoCard
+              key={photo.id}
+              photo={photo}
+              onClick={() => setSelectedPhoto(photo)}
+              onNavigate={(e) => handleNavigateToPhotoPage(e, photo)}
+              variants={itemVariants}
+            />
+          ))}
+        </motion.div>
+
+        {visiblePhotos.length === 0 && !isLoading && (
+          <div className="text-center py-12">
+            <p className="text-gray-500 dark:text-gray-400">No photos found.</p>
+          </div>
+        )}
       </div>
 
       {/* Full-screen image modal */}
@@ -53,158 +150,117 @@ export default function GalleryGrid({ photos }: GalleryGridProps) {
   );
 }
 
-function PhotoCard({
-  photo,
-  index,
-  onClick,
-}: {
+import { Variants } from "framer-motion";
+
+interface PhotoCardProps {
   photo: PhotoMetadata;
-  index: number;
   onClick: () => void;
-}) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  onNavigate: (e: React.MouseEvent) => void;
+  variants?: Variants;
+}
 
-  // Validate the photo object has required properties
-  useEffect(() => {
-    if (!photo || !photo.src) {
-      console.error("Invalid photo data:", photo);
-      setError(true);
+const PhotoCard: React.FC<PhotoCardProps> = ({
+  photo,
+  onClick,
+  onNavigate,
+  variants,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Format the image URL
+  const getImageUrl = () => {
+    if (photo.src.startsWith("/photos/")) {
+      return `/api/photos/${photo.src.split("/").pop()}`;
+    } else if (photo.src.startsWith("/api/photos/")) {
+      return photo.src;
+    } else {
+      const parts = photo.src.split("/").filter(Boolean);
+      const filename = parts.length > 0 ? parts[parts.length - 1] : photo.src;
+      return `/api/photos/${filename}`;
     }
-  }, [photo]);
-
-  // Subtle parallax effect
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setMousePosition({ x, y });
   };
 
   return (
     <motion.div
-      ref={cardRef}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{
-        delay: Math.min(index * 0.1, 1),
-        duration: 0.6,
-        ease: [0.43, 0.13, 0.23, 0.96],
-      }}
-      whileHover={{
-        scale: 1.02,
-        transition: { duration: 0.2 },
-      }}
-      className="group relative aspect-[4/3] overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl vintage-border hover-lift bg-gray-100 dark:bg-gray-900 cursor-pointer touch-manipulation no-tap-highlight"
+      variants={variants}
+      className="relative rounded-lg overflow-hidden aspect-square shadow-md hover:shadow-xl transition-shadow duration-300"
       onClick={onClick}
-      onMouseMove={handleMouseMove}
-      style={{
-        transform: `perspective(1000px) rotateX(${mousePosition.y * 3}deg) rotateY(${-mousePosition.x * 3}deg)`,
-        transition: "transform 0.1s ease",
-      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
     >
-      {/* Loading placeholder */}
-      {isLoading && <div className="absolute inset-0 image-loading-pulse" />}
-
-      {/* Error placeholder */}
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-800">
-          <svg
-            className="w-12 h-12 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </div>
-      )}
-
-      {/* Image */}
-      <div className="absolute inset-0 overflow-hidden">
-        {photo.src && (
-          <Image
-            src={(() => {
-              // Extract filename from photo src path
-              let imageSrc = "";
-              if (photo.src.startsWith("/photos/")) {
-                // For paths like /photos/image.jpg
-                imageSrc = `/api/photos/${photo.src.split("/").pop()}`;
-                console.log(`Converting ${photo.src} to ${imageSrc}`);
-              } else if (photo.src.startsWith("/api/photos/")) {
-                // Already in the right format
-                imageSrc = photo.src;
-              } else {
-                // For other formats, try to extract filename or use as is
-                const parts = photo.src.split("/").filter(Boolean);
-                const filename =
-                  parts.length > 0 ? parts[parts.length - 1] : photo.src;
-                imageSrc = `/api/photos/${filename}`;
-                console.log(
-                  `Using extracted filename ${filename} from ${photo.src}`,
-                );
-              }
-              return imageSrc;
-            })()}
-            alt={photo.alt || "Gallery image"}
-            fill
-            className={`object-cover transition-all duration-500 group-hover:scale-105 vintage-filter ${
-              isLoading ? "opacity-0" : "opacity-100"
-            }`}
-            sizes="(max-width: 640px) 95vw, (max-width: 768px) 45vw, (max-width: 1200px) 30vw, 400px"
-            priority={index < 6}
-            onLoadingComplete={() => setIsLoading(false)}
-            onError={(e) => {
-              console.error("Error loading image:", photo.src, e);
-              setIsLoading(false);
-              setError(true);
-            }}
-            style={{
-              transform: `scale(1.1) translateX(${mousePosition.x * -10}px) translateY(${mousePosition.y * -10}px)`,
-            }}
-          />
+      <div className="relative w-full h-full">
+        {/* Image placeholder before loading */}
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+            <svg
+              className="w-10 h-10 text-gray-400 dark:text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
         )}
-      </div>
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
+        <Image
+          src={getImageUrl()}
+          alt={photo.alt || photo.title || "Photography"}
+          fill
+          className={`object-cover transition-opacity duration-300 ${
+            imageLoaded ? "opacity-100" : "opacity-0"
+          }`}
+          onLoadingComplete={() => setImageLoaded(true)}
+          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+        />
+
+        {/* Overlay with info and actions */}
         <motion.div
-          className="absolute bottom-4 left-4 right-4 text-white"
-          initial={{ y: 20, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
+          className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-between p-4 text-white"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isHovered ? 1 : 0 }}
+          transition={{ duration: 0.2 }}
         >
-          <h3 className="text-lg font-serif mb-2 text-shadow leading-tight">
-            {photo.title}
-          </h3>
-          <div className="space-y-1 text-sm opacity-90">
-            {photo.year && (
-              <p className="font-mono text-shadow text-xs">{photo.year}</p>
-            )}
-            {photo.camera && (
-              <p className="text-gray-200 text-shadow text-xs">
-                {photo.camera}
+          <div>
+            <h3 className="text-lg font-semibold truncate">{photo.title}</h3>
+            {photo.description && (
+              <p className="text-sm line-clamp-2 text-gray-200">
+                {photo.description}
               </p>
             )}
-            {photo.location && (
-              <p className="text-gray-200 text-shadow text-xs">
-                {photo.location}
-              </p>
-            )}
+          </div>
+
+          <div className="flex justify-between items-end">
+            <SocialActions
+              photoId={photo.id}
+              photoTitle={photo.title || "Photo"}
+              size={20}
+              className="text-white"
+            />
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onNavigate}
+              className="bg-white/20 backdrop-blur-sm text-white py-2 px-3 rounded-md hover:bg-white/30 transition-all duration-300 text-sm font-medium"
+            >
+              View Photo
+            </motion.button>
           </div>
         </motion.div>
       </div>
     </motion.div>
   );
-}
+};
 
 function PhotoModal({
   photo,
@@ -215,8 +271,10 @@ function PhotoModal({
 }) {
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [isLoading, setIsLoading] = useState(true);
   const imageRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Close on escape key
   useEffect(() => {
@@ -316,6 +374,37 @@ function PhotoModal({
           onClick={handleImageClick}
           onMouseMove={handleMouseMove}
         >
+          {/* Loading indicator */}
+          <AnimatePresence>
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center z-10"
+              >
+                <div className="flex flex-col items-center">
+                  <div className="w-16 h-16 relative">
+                    <motion.span
+                      className="block absolute w-full h-full rounded-full"
+                      style={{
+                        border: "3px solid rgba(255,255,255,0.2)",
+                        borderTopColor: "white",
+                      }}
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 1.5,
+                        ease: "linear",
+                        repeat: Infinity,
+                      }}
+                    />
+                  </div>
+                  <p className="text-white/70 text-sm mt-3">Loading image...</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="relative w-full h-[60vh] sm:h-[70vh] overflow-hidden">
             <Image
               src={
@@ -331,6 +420,7 @@ function PhotoModal({
               `}
               sizes="(max-width: 1400px) 100vw, 1400px"
               priority
+              onLoadingComplete={() => setIsLoading(false)}
               style={
                 isZoomed
                   ? {
@@ -339,6 +429,16 @@ function PhotoModal({
                   : {}
               }
             />
+
+            {/* Zoom indicator */}
+            <motion.div
+              className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm rounded-full px-4 py-2 text-xs text-white font-mono"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isZoomed ? 1 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {isZoomed ? "150%" : "100%"}
+            </motion.div>
           </div>
         </div>
 
@@ -373,6 +473,48 @@ function PhotoModal({
                 {photo.description}
               </p>
             )}
+
+            {/* Social actions and permalink button */}
+            <div className="mt-4 flex flex-col space-y-3">
+              <button
+                onClick={() => {
+                  const slug = `${
+                    photo.title?.toLowerCase().replace(/\s+/g, "-") || "photo"
+                  }-${photo.id}`;
+                  router.push(`/gallery/${slug}`);
+                }}
+                className="bg-white/20 backdrop-blur-sm text-white py-2 px-4 rounded-md hover:bg-white/30 transition-all duration-300 text-sm font-medium flex items-center justify-center"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14.828 14.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.102-1.101"
+                  />
+                </svg>
+                View Full Page
+              </button>
+
+              <SocialActions
+                photoId={photo.id || ""}
+                photoTitle={photo.title || "Untitled"}
+                className="text-white"
+                size={28}
+              />
+            </div>
           </div>
 
           <div className="text-xs text-white/70 flex items-center gap-1 self-start md:self-auto">

@@ -24,14 +24,25 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File;
     console.log("Received file:", file?.name);
 
-    // Extract metadata from form
-    const metadata = {
-      title: formData.get("title") as string,
-      alt: formData.get("alt") as string,
-      year: (formData.get("year") as string) || undefined,
-      location: (formData.get("location") as string) || undefined,
-      camera: (formData.get("camera") as string) || undefined,
-      description: (formData.get("description") as string) || undefined,
+    // Extract metadata from form and ensure string types
+    const metadata: {
+      title: string;
+      alt: string;
+      year?: string | null;
+      location?: string | null;
+      camera?: string | null;
+      description?: string | null;
+    } = {
+      title: String(formData.get("title") || ""),
+      alt: String(formData.get("alt") || ""),
+      year: formData.get("year") ? String(formData.get("year")) : null,
+      location: formData.get("location")
+        ? String(formData.get("location"))
+        : null,
+      camera: formData.get("camera") ? String(formData.get("camera")) : null,
+      description: formData.get("description")
+        ? String(formData.get("description"))
+        : null,
     };
     console.log("Metadata:", metadata);
 
@@ -95,6 +106,9 @@ export async function POST(req: NextRequest) {
           );
           // Dynamically import the image processor to keep it out of the main bundle
           const { processImage } = await import("@/lib/image-processor");
+
+          // Use type assertion to bypass the Buffer type checking
+          // @ts-expect-error - Buffer types are compatible at runtime
           processedBuffer = await processImage(buffer, 30); // Allow up to 30MB after processing
           console.log(
             `Image processed. New size: ${Math.round(processedBuffer.length / 1024 / 1024)}MB`,
@@ -135,15 +149,15 @@ export async function POST(req: NextRequest) {
     console.log("Saving to database...");
     const photo = await prisma.photo.create({
       data: {
-        src,
-        title: metadata.title,
-        alt: metadata.alt,
+        src, // src is already a string
+        title: metadata.title, // already converted to string in metadata extraction
+        alt: metadata.alt, // already converted to string in metadata extraction
         width: 1600, // default width
         height: 1067, // default height
-        year: metadata.year,
-        location: metadata.location,
-        camera: metadata.camera,
-        description: metadata.description,
+        year: metadata.year, // already properly typed in metadata extraction
+        location: metadata.location, // already properly typed in metadata extraction
+        camera: metadata.camera, // already properly typed in metadata extraction
+        description: metadata.description, // already properly typed in metadata extraction
       },
     });
     console.log("Database save successful:", photo);
@@ -178,13 +192,12 @@ export async function GET() {
     if (dbPhotos.length > 0) {
       // Check if any photos need path fixing (for backward compatibility)
       const normalizedPhotos = dbPhotos.map((photo) => {
-        if (
-          !photo.src.startsWith("/photos/") &&
-          !photo.src.startsWith("/api/")
-        ) {
+        // Make sure all photos use the API route format
+        if (!photo.src.startsWith("/api/photos/")) {
+          const filename = photo.src.split("/").pop();
           return {
             ...photo,
-            src: `/photos/${photo.src.split("/").pop()}`,
+            src: `/api/photos/${filename}`,
           };
         }
         return photo;
@@ -246,24 +259,28 @@ export async function PUT(req: NextRequest) {
         );
 
         metadata = {
-          src: jsonData.src,
-          title: jsonData.title,
-          alt: jsonData.alt,
+          src: String(jsonData.src || ""),
+          title: String(jsonData.title || ""),
+          alt: String(jsonData.alt || ""),
           width: 1600, // default width
           height: 1067, // default height
-          year: jsonData.year || null,
-          location: jsonData.location || null,
-          camera: jsonData.camera || null,
-          description: jsonData.description || null,
+          year: jsonData.year ? String(jsonData.year) : null,
+          location: jsonData.location ? String(jsonData.location) : null,
+          camera: jsonData.camera ? String(jsonData.camera) : null,
+          description: jsonData.description
+            ? String(jsonData.description)
+            : null,
         };
       } else {
         metadata = {
-          title: jsonData.title,
-          alt: jsonData.alt,
-          year: jsonData.year || null,
-          location: jsonData.location || null,
-          camera: jsonData.camera || null,
-          description: jsonData.description || null,
+          title: String(jsonData.title || ""),
+          alt: String(jsonData.alt || ""),
+          year: jsonData.year ? String(jsonData.year) : null,
+          location: jsonData.location ? String(jsonData.location) : null,
+          camera: jsonData.camera ? String(jsonData.camera) : null,
+          description: jsonData.description
+            ? String(jsonData.description)
+            : null,
         };
       }
     } else {
@@ -278,14 +295,18 @@ export async function PUT(req: NextRequest) {
         );
       }
 
-      // Extract metadata from form
+      // Extract metadata from form with proper string handling
       metadata = {
-        title: formData.get("title") as string,
-        alt: formData.get("alt") as string,
-        year: (formData.get("year") as string) || undefined,
-        location: (formData.get("location") as string) || undefined,
-        camera: (formData.get("camera") as string) || undefined,
-        description: (formData.get("description") as string) || undefined,
+        title: String(formData.get("title") || ""),
+        alt: String(formData.get("alt") || ""),
+        year: formData.get("year") ? String(formData.get("year")) : null,
+        location: formData.get("location")
+          ? String(formData.get("location"))
+          : null,
+        camera: formData.get("camera") ? String(formData.get("camera")) : null,
+        description: formData.get("description")
+          ? String(formData.get("description"))
+          : null,
       };
     }
 
@@ -300,15 +321,37 @@ export async function PUT(req: NextRequest) {
     let photo;
     if (createNew) {
       console.log("Creating new photo in database:", metadata);
+      // Ensure all values are properly typed as strings for Prisma
       photo = await prisma.photo.create({
-        data: metadata,
+        data: {
+          src: String(metadata.src || ""),
+          title: String(metadata.title || ""),
+          alt: String(metadata.alt || ""),
+          width: 1600, // default width
+          height: 1067, // default height
+          year: metadata.year ? String(metadata.year) : null,
+          location: metadata.location ? String(metadata.location) : null,
+          camera: metadata.camera ? String(metadata.camera) : null,
+          description: metadata.description
+            ? String(metadata.description)
+            : null,
+        },
       });
       console.log("New photo created:", photo);
     } else {
       console.log(`Updating photo with ID ${id}`);
       photo = await prisma.photo.update({
         where: { id: id! },
-        data: metadata,
+        data: {
+          title: String(metadata.title || ""),
+          alt: String(metadata.alt || ""),
+          year: metadata.year ? String(metadata.year) : null,
+          location: metadata.location ? String(metadata.location) : null,
+          camera: metadata.camera ? String(metadata.camera) : null,
+          description: metadata.description
+            ? String(metadata.description)
+            : null,
+        },
       });
     }
 

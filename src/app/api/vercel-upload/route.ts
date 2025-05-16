@@ -146,7 +146,8 @@ export async function POST(req: NextRequest) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.user.token || ""}`,
+        // Fix: user doesn't have a token property in the session
+        Authorization: `Bearer ${session?.user?.id || ""}`,
       },
       body: JSON.stringify({
         src,

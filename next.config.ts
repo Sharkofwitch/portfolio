@@ -22,6 +22,10 @@ const nextConfig: NextConfig = {
     // This is a temporary workaround for the build errors
     ignoreBuildErrors: true,
   },
+  // Ensure CSS modules are properly loaded and built
+  sassOptions: {
+    includePaths: ['./src/styles'],
+  },
 };
 
 export default nextConfig;

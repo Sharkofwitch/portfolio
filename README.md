@@ -4,6 +4,14 @@ A modern, Apple-inspired photography portfolio website built with Next.js, featu
 
 ![Portfolio Preview](public/camera-favicon.svg)
 
+## Recent Updates
+
+- **Universal Image Loading**: Added robust system to handle various image paths and formats
+- **Path Consistency**: Implemented solution for timestamp-prefixed images and path inconsistencies
+- **Comprehensive Testing**: Created verification scripts for database consistency and image loading
+- **Documentation**: Added detailed documentation on the image system architecture
+- **Database Tools**: Created utilities to maintain consistent database records
+
 ## Features
 
 - **Responsive Design**: Works seamlessly on mobile, tablet, and desktop
@@ -14,6 +22,8 @@ A modern, Apple-inspired photography portfolio website built with Next.js, featu
 - **SEO Optimized**: Built with best practices for search engine visibility
 - **Fast Performance**: Optimized for Core Web Vitals
 - **Nextcloud Integration**: Store and manage photos using Nextcloud
+- **Universal Image Loading**: Robust solution for handling various image paths and formats
+- **Automatic Path Correction**: Intelligently handles timestamp-prefixed images and path inconsistencies
 
 ## Tech Stack
 
@@ -36,12 +46,14 @@ A modern, Apple-inspired photography portfolio website built with Next.js, featu
 ### Installation
 
 1. Clone this repository
+
 ```bash
 git clone https://github.com/yourusername/photography-portfolio.git
 cd photography-portfolio
 ```
 
 2. Install dependencies
+
 ```bash
 npm install
 # or
@@ -49,17 +61,21 @@ yarn install
 ```
 
 3. Set up environment variables
+
 ```bash
 cp .env.example .env.local
 ```
+
 Edit `.env.local` with your database credentials and other environment variables.
 
 4. Set up the database
+
 ```bash
 npx prisma migrate dev
 ```
 
 5. Start the development server
+
 ```bash
 npm run dev
 # or
@@ -71,17 +87,30 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 ## Project Structure
 
 ```
-src/
-├── app/               # Next.js app router pages
-│   ├── about/         # About page
-│   ├── admin/         # Admin area (protected)
-│   ├── api/           # API routes
-│   ├── contact/       # Contact page
-│   ├── gallery/       # Photo gallery
-│   └── page.tsx       # Homepage
-├── components/        # Reusable components
-├── lib/               # Utility functions and types
-└── data/              # Static data
+├── src/
+│   ├── app/               # Next.js app router pages
+│   │   ├── about/         # About page
+│   │   ├── admin/         # Admin area (protected)
+│   │   ├── api/           # API routes
+│   │   │   ├── photos/    # Universal image loading API
+│   │   │   └── ...
+│   │   ├── contact/       # Contact page
+│   │   ├── gallery/       # Photo gallery
+│   │   └── page.tsx       # Homepage
+│   ├── components/        # Reusable components
+│   ├── lib/               # Utility functions and types
+│   │   ├── nextcloud.ts   # Nextcloud integration
+│   │   └── ...
+│   └── data/              # Static data
+│
+├── scripts/               # Utility scripts
+│   ├── verify-universal-solution.js  # Test image loading solution
+│   ├── verify-database-consistency.js # Database path verification
+│   ├── refresh-database.js # Ensure consistent database records
+│   └── ...
+│
+└── public/                # Static assets
+    └── photos/            # Local photo storage
 ```
 
 ## Deployment
@@ -104,6 +133,17 @@ You can also deploy this project on any hosting service that supports Next.js, s
 - DigitalOcean App Platform
 - Self-hosted with Docker
 
+## Universal Image Loading Solution
+
+This project implements a robust universal image loading system that handles various path formats and filename patterns:
+
+- **Multi-Strategy Approach**: Images are searched in the public directory, database records, and Nextcloud storage
+- **Path Pattern Recognition**: Handles timestamp-prefixed filenames (e.g., "1747175977747-playground-poise.jpeg")
+- **Automatic Path Generation**: Creates various path combinations to find images regardless of path inconsistencies
+- **Fallback Mechanism**: Gracefully falls back to placeholder images when needed
+
+For more details on the implementation, check the [PORTFOLIO_IMAGE_SYSTEM.md](PORTFOLIO_IMAGE_SYSTEM.md) document.
+
 ## Admin Panel
 
 To access the admin panel:
@@ -116,6 +156,25 @@ To access the admin panel:
 
 This project uses NextAuth.js for authentication. You can modify the authentication providers in `src/app/api/auth/[...nextauth]/route.ts`.
 
+## Nextcloud Integration and Image System
+
+This project integrates with Nextcloud for storing and managing photos. The system includes:
+
+1. **API Route**: Photos are served through the `/api/photos/[filename]` route
+2. **Universal Loading**: The system implements a multi-strategy approach to find images:
+
+   - Tries the local public directory first
+   - Checks database records for path information
+   - Generates and tries multiple path variations based on patterns
+   - Falls back to placeholder images when needed
+
+3. **Database Consistency**: All database records use standardized paths in the format `/api/photos/[filename]`
+
+To configure your Nextcloud connection:
+
+1. Update your environment variables with Nextcloud credentials
+2. Run initial synchronization: `node scripts/sync-db-with-nextcloud.js`
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -125,6 +184,40 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## Troubleshooting
+
+### Image Loading Issues
+
+If you encounter issues with images not loading properly:
+
+1. **Verify database paths**: Run the database verification script to ensure all paths are consistent:
+
+   ```bash
+   node scripts/verify-database-consistency.js
+   ```
+
+2. **Refresh database**: If inconsistencies are found, run the refresh script:
+
+   ```bash
+   node scripts/refresh-database.js
+   ```
+
+3. **Validate solution**: Test the universal image loading solution:
+
+   ```bash
+   node scripts/verify-universal-solution.js
+   ```
+
+4. **Check logs**: The API routes provide detailed logging about image loading attempts and paths tried.
+
+### Common Image Issues
+
+- **Timestamp-Prefixed Images**: The system automatically handles files with timestamps (e.g., "1747175977747-playground-poise.jpeg")
+- **Path Inconsistencies**: Images can be found regardless of capitalization or folder structure variations
+- **Missing Images**: All missing images will gracefully fall back to a placeholder
+
+For deployment-related issues, check the [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) document.
 
 ## License
 

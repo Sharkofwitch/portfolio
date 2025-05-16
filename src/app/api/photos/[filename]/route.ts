@@ -2,8 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { downloadPhoto } from "@/lib/nextcloud";
 import prisma from "@/lib/prisma";
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,59 +14,59 @@ export const revalidate = 0;
  */
 function generateSearchPaths(filename: string): string[] {
   const searchPaths: string[] = [];
-  
+
   // Always try the exact filename as provided
   searchPaths.push(filename);
   searchPaths.push(`/${filename}`);
-  
+
   // Handle timestamp-based filenames (e.g., "1747175977747-playground-poise.jpeg")
   const timestampMatch = filename.match(/^(\d{13})-(.+)$/);
-  
+
   if (timestampMatch) {
     const timestamp = timestampMatch[1]; // e.g., "1747175977747"
-    const baseName = timestampMatch[2];  // e.g., "playground-poise.jpeg"
-    
+    const baseName = timestampMatch[2]; // e.g., "playground-poise.jpeg"
+
     // Add base filename variations
     searchPaths.push(baseName);
     searchPaths.push(`/${baseName}`);
-    
+
     // Add combinations with timestamp
     searchPaths.push(`${timestamp}/${baseName}`);
     searchPaths.push(`/${timestamp}/${baseName}`);
   }
-  
+
   // Add common folder structure variations
-  const filenameWithoutPath = filename.split('/').pop() || filename;
-  
+  const filenameWithoutPath = filename.split("/").pop() || filename;
+
   // Add standard paths with various capitalization patterns
   const pathVariations = [
-    'photos',
-    'Photos',
-    'Portfolio',
-    'portfolio',
-    'Photos/Portfolio',
-    'photos/Portfolio',
-    'Photos/portfolio',
-    'photos/portfolio'
+    "photos",
+    "Photos",
+    "Portfolio",
+    "portfolio",
+    "Photos/Portfolio",
+    "photos/Portfolio",
+    "Photos/portfolio",
+    "photos/portfolio",
   ];
-  
+
   for (const pathVar of pathVariations) {
     searchPaths.push(`${filenameWithoutPath}`); // Just the filename
     searchPaths.push(`${pathVar}/${filenameWithoutPath}`);
     searchPaths.push(`/${pathVar}/${filenameWithoutPath}`);
   }
-  
+
   // If the filename has timestamp prefix, also try paths with the base name
   if (timestampMatch) {
     const baseName = timestampMatch[2];
-    
+
     for (const pathVar of pathVariations) {
       searchPaths.push(`${baseName}`); // Just the base name
       searchPaths.push(`${pathVar}/${baseName}`);
       searchPaths.push(`/${pathVar}/${baseName}`);
     }
   }
-  
+
   // Remove duplicates
   return [...new Set(searchPaths)];
 }
@@ -74,6 +74,8 @@ function generateSearchPaths(filename: string): string[] {
 // Use the standard Next.js API route parameters interface
 export async function GET(
   request: NextRequest,
+  // We extract filename from URL path to avoid synchronous params access
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   { params }: { params: { filename: string } },
 ) {
   try {
@@ -82,7 +84,7 @@ export async function GET(
 
     // Extract the filename from URL pathname to avoid synchronous params access
     const pathname = request.nextUrl.pathname;
-    const filename = pathname.split('/').pop() || '';
+    const filename = pathname.split("/").pop() || "";
     const src = `/photos/${filename}`;
     const apiSrc = `/api/photos/${filename}`;
 
@@ -108,72 +110,86 @@ export async function GET(
 
     // Strategy 1: Check if the image exists in the public/photos directory
     try {
-      const publicPhotoPath = path.join(process.cwd(), 'public', 'photos', filename);
+      const publicPhotoPath = path.join(
+        process.cwd(),
+        "public",
+        "photos",
+        filename,
+      );
       if (fs.existsSync(publicPhotoPath)) {
-        console.log(`[API] Found image in public directory: ${publicPhotoPath}`);
+        console.log(
+          `[API] Found image in public directory: ${publicPhotoPath}`,
+        );
         buffer = fs.readFileSync(publicPhotoPath);
       }
     } catch (error) {
       console.error(`[API] Error reading from public directory:`, error);
     }
-    
+
     // Strategy 2: If not found in public dir, check database and try Nextcloud
     if (!buffer) {
       // Check database for record with either /photos/ or /api/photos/ prefix
       const photoRecord = await prisma.photo.findFirst({
-        where: { 
-          OR: [
-            { src },
-            { src: apiSrc }
-          ]
+        where: {
+          OR: [{ src }, { src: apiSrc }],
         },
       });
 
       if (photoRecord) {
-        console.log(`[API] Found photo record in database with ID: ${photoRecord.id}`);
-        
+        console.log(
+          `[API] Found photo record in database with ID: ${photoRecord.id}`,
+        );
+
         // Try to download from Nextcloud with the original src path
         buffer = await downloadPhoto(src);
       } else {
-        console.log(`[API] No record found in database for: ${src} or ${apiSrc}`);
+        console.log(
+          `[API] No record found in database for: ${src} or ${apiSrc}`,
+        );
       }
     }
-    
+
     // Strategy 3: Try all generated search paths with Nextcloud
     if (!buffer) {
-      console.log(`[API] Trying ${searchPaths.length} alternative paths for: ${filename}`);
-      
+      console.log(
+        `[API] Trying ${searchPaths.length} alternative paths for: ${filename}`,
+      );
+
       for (const searchPath of searchPaths) {
         try {
           console.log(`[API] Trying path: ${searchPath}`);
           buffer = await downloadPhoto(searchPath);
-          
+
           if (buffer) {
             console.log(`[API] ✓ Found photo using path: ${searchPath}`);
-            
+
             // Log successful path for future reference
-            console.log(`[API] SUCCESSFUL_PATH_MAPPING: ${filename} => ${searchPath}`);
+            console.log(
+              `[API] SUCCESSFUL_PATH_MAPPING: ${filename} => ${searchPath}`,
+            );
             break;
           }
-        } catch (pathError) {
+        } catch {
           // Non-critical error, continue trying other paths
           console.log(`[API] Failed to load from path: ${searchPath}`);
         }
       }
     }
-    
+
     // Final fallback: Use the placeholder image
     if (!buffer) {
       console.log(`[API] Photo not found in any storage: ${filename}`);
-      return NextResponse.redirect(new URL("/placeholder-image.svg", request.url));
+      return NextResponse.redirect(
+        new URL("/placeholder-image.svg", request.url),
+      );
     }
 
     // Determine content type based on extension
     let contentType = "image/jpeg"; // Default for jpg/jpeg
-    
+
     // Get extension from filename
-    const extension = filename.split('.').pop()?.toLowerCase() || '';
-    
+    const extension = filename.split(".").pop()?.toLowerCase() || "";
+
     if (extension === "png") {
       contentType = "image/png";
     } else if (extension === "svg") {
@@ -193,22 +209,29 @@ export async function GET(
     });
   } catch (error) {
     // Extract filename from URL path to avoid synchronous params access
-    const errorFilename = request.nextUrl.pathname.split('/').pop() || 'unknown';
+    const errorFilename =
+      request.nextUrl.pathname.split("/").pop() || "unknown";
     console.error(`Error serving photo ${errorFilename}:`, error);
-    
+
     // More detailed error logging
     if (error instanceof Error) {
       console.error(`Error name: ${error.name}, message: ${error.message}`);
       console.error(`Error stack: ${error.stack}`);
     }
-    
+
     // For production, serve a placeholder instead of error
     if (process.env.VERCEL_ENV === "production") {
-      console.log(`[API/Vercel] Error in production for ${errorFilename} - serving placeholder`);
-      return NextResponse.redirect(new URL("/placeholder-image.svg", request.url));
+      console.log(
+        `[API/Vercel] Error in production for ${errorFilename} - serving placeholder`,
+      );
+      return NextResponse.redirect(
+        new URL("/placeholder-image.svg", request.url),
+      );
     }
 
     // In development, also serve a placeholder but with a different status
-    return NextResponse.redirect(new URL("/placeholder-image.svg", request.url));
+    return NextResponse.redirect(
+      new URL("/placeholder-image.svg", request.url),
+    );
   }
 }

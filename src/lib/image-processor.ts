@@ -14,26 +14,29 @@ import sharp from "sharp";
  * @returns The processed buffer (resized if needed)
  */
 export async function processImage(
-  buffer: Buffer,
+  buffer: Uint8Array | Buffer,
   maxSizeMB = 5,
   maxWidth = 2400,
   maxHeight = 2400,
 ): Promise<Buffer> {
+  // Ensure we're working with a Buffer
+  const inputBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+
   // If the buffer is already under the size limit, return it as is
-  if (buffer.length <= maxSizeMB * 1024 * 1024) {
+  if (inputBuffer.length <= maxSizeMB * 1024 * 1024) {
     console.log(
       "[ImageProcessor] Image is already under size limit, skipping processing",
     );
-    return buffer;
+    return inputBuffer;
   }
 
   try {
     console.log("[ImageProcessor] Processing large image...");
 
     // Get image info
-    const metadata = await sharp(buffer).metadata();
+    const metadata = await sharp(inputBuffer).metadata();
     console.log(
-      `[ImageProcessor] Original image: ${metadata.width}x${metadata.height}, ${buffer.length} bytes`,
+      `[ImageProcessor] Original image: ${metadata.width}x${metadata.height}, ${inputBuffer.length} bytes`,
     );
 
     // Calculate target dimensions while maintaining aspect ratio
@@ -41,7 +44,7 @@ export async function processImage(
       (metadata.width && metadata.width > maxWidth) ||
       (metadata.height && metadata.height > maxHeight);
 
-    let processedBuffer = buffer;
+    let processedBuffer = inputBuffer;
 
     // Resize if needed
     if (needsResize && metadata.width && metadata.height) {
@@ -63,7 +66,7 @@ export async function processImage(
       }
 
       console.log(`[ImageProcessor] Resizing to ${newWidth}x${newHeight}`);
-      processedBuffer = await sharp(buffer)
+      processedBuffer = await sharp(inputBuffer)
         .resize(newWidth, newHeight, {
           fit: "inside",
           withoutEnlargement: true,
@@ -80,17 +83,24 @@ export async function processImage(
       // Start with quality 90 and reduce until under limit or reaching min quality
       let quality = 90;
       const minQuality = 70;
-      const format = metadata.format === "png" ? "png" : "jpeg";
+      // Use type assertion to avoid type error with format comparison
+      const format =
+        typeof metadata.format === "string" ? metadata.format : "jpeg";
 
       while (quality >= minQuality) {
         console.log(`[ImageProcessor] Trying with quality ${quality}%`);
 
-        const sharpInstance = sharp(needsResize ? processedBuffer : buffer);
+        const sharpInstance = sharp(
+          needsResize ? processedBuffer : inputBuffer,
+        );
 
         if (format === "jpeg" || format === "jpg") {
           processedBuffer = await sharpInstance.jpeg({ quality }).toBuffer();
-        } else {
+        } else if (format === "png") {
           processedBuffer = await sharpInstance.png({ quality }).toBuffer();
+        } else {
+          // Default to jpeg for unknown formats
+          processedBuffer = await sharpInstance.jpeg({ quality }).toBuffer();
         }
 
         if (processedBuffer.length <= maxSizeMB * 1024 * 1024) {
@@ -102,8 +112,8 @@ export async function processImage(
     }
 
     console.log(
-      `[ImageProcessor] Processing complete. Original: ${buffer.length} bytes, Processed: ${processedBuffer.length} bytes, ` +
-        `Reduction: ${Math.round((1 - processedBuffer.length / buffer.length) * 100)}%`,
+      `[ImageProcessor] Processing complete. Original: ${inputBuffer.length} bytes, Processed: ${processedBuffer.length} bytes, ` +
+        `Reduction: ${Math.round((1 - processedBuffer.length / inputBuffer.length) * 100)}%`,
     );
 
     return processedBuffer;

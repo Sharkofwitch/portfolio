@@ -1,0 +1,102 @@
+/* Social Interactions Styles */
+
+/* Social Share Buttons */
+.social-share-button {
+  @apply p-2.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 transition-all;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.social-share-button:hover {
+  @apply bg-gray-300 dark:bg-gray-600;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Like Animation */
+@keyframes likeAnimation {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.like-animation {
+  animation: likeAnimation 0.4s ease-in-out;
+}
+
+/* Comment Animation */
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.comment-new {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* Modal/Dialog Overlay Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Notification Toast Animation */
+@keyframes toast {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  85% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.notification-toast {
+  animation: toast 2.5s ease-in-out;
+}
+
+/* Heart Particle Animation */
+@keyframes particleFade {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
+}
+
+.heart-particle {
+  position: absolute;
+  pointer-events: none;
+  animation: particleFade 0.6s ease-out forwards;
+}
