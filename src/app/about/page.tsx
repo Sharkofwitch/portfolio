@@ -133,35 +133,85 @@ export default function AboutPage() {
 
               <motion.p variants={item}>
                 As I continue to evolve as a photographer, I&apos;m excited
-                about my upcoming transition to the Fujifilm X-S20, which will
-                become my primary camera. This fusion of digital precision and
-                classic aesthetic represents my approach to photography -
+                about my newest transition to the Leica T (Typ 701), which is
+                now my primary camera. This fusion of digital precision and
+                classic aesthetic represents my approach to photography –
                 bridging contemporary technology with timeless technique.
               </motion.p>
             </motion.div>
 
-            <motion.div variants={item} className="pt-6 space-y-4">
-              <h2 className="font-serif text-xl text-gray-900 dark:text-white">
+            <motion.div variants={item} className="pt-6 space-y-4 relative">
+              {/* Decorative animated line */}
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="origin-left absolute left-0 top-0 h-1 w-32 bg-gradient-to-r from-blue-400 via-emerald-400 to-transparent rounded-full opacity-40"
+                aria-hidden="true"
+              />
+              <h2 className="font-serif text-xl text-gray-900 dark:text-white flex items-center gap-2">
                 Equipment & Timeline
+                <span className="inline-block animate-bounce text-blue-400">
+                  •
+                </span>
               </h2>
               <ul className="space-y-4">
                 {[
-                  "2024: iPhone 16 Pro",
-                  "2025: Yashica FX1",
-                  "Coming Soon: Fujifilm X-S20",
+                  { label: "2024: iPhone 16 Pro", color: "bg-blue-400" },
+                  { label: "2025: Yashica FX1", color: "bg-emerald-400" },
+                  { label: "2026: Leica T (Typ 701)", color: "bg-yellow-400" },
                 ].map((item, i) => (
                   <motion.li
                     key={i}
                     initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    whileInView={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6 + i * 0.1 }}
-                    className="font-mono text-sm text-gray-600 dark:text-gray-400 flex items-center"
+                    className="font-mono text-sm text-gray-600 dark:text-gray-400 flex items-center group"
                   >
-                    <span className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-600 mr-3"></span>
-                    {item}
+                    <span
+                      className={`w-2 h-2 rounded-full mr-3 transition-transform duration-300 group-hover:scale-125 ${item.color}`}
+                    ></span>
+                    <span className="transition-colors duration-300 group-hover:text-black dark:group-hover:text-white">
+                      {item.label}
+                    </span>
                   </motion.li>
                 ))}
               </ul>
+              {/* Subtle floating camera icon */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 0.15, y: 0 }}
+                transition={{ duration: 1.2, delay: 0.5 }}
+                className="absolute -right-8 -top-8 text-7xl text-yellow-300 pointer-events-none select-none"
+                aria-hidden="true"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 48 48"
+                  className="w-16 h-16 animate-float"
+                >
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="22"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="currentColor"
+                    opacity="0.2"
+                  />
+                  <rect
+                    x="12"
+                    y="18"
+                    width="24"
+                    height="16"
+                    rx="4"
+                    fill="currentColor"
+                    opacity="0.5"
+                  />
+                  <circle cx="24" cy="26" r="5" fill="#fffde4" />
+                </svg>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>

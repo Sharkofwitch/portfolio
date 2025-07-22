@@ -251,19 +251,72 @@ export default function ContactPage() {
                 <motion.div
                   variants={item}
                   className="text-center pt-4"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                 >
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 rounded-xl font-mono text-sm tracking-wider shadow-md hover:shadow-lg relative overflow-hidden group"
+                    className="px-8 py-3 bg-gradient-to-r from-blue-500 to-emerald-500 text-white dark:text-black dark:from-blue-200 dark:to-emerald-200 hover:from-blue-600 hover:to-emerald-600 dark:hover:from-blue-300 dark:hover:to-emerald-300 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-300 rounded-xl font-mono text-sm tracking-wider shadow-lg hover:shadow-2xl relative overflow-hidden group focus:ring-2 focus:ring-blue-400 focus:outline-none"
                   >
-                    <span className="relative z-10">
+                    <span className="relative z-10 flex items-center gap-2">
+                      {isSubmitting && (
+                        <svg
+                          className="animate-spin h-4 w-4 text-white dark:text-black"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8z"
+                          ></path>
+                        </svg>
+                      )}
                       {isSubmitting ? "SENDING..." : "SEND MESSAGE"}
                     </span>
-                    <motion.span className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-900 dark:from-gray-100 dark:to-white opacity-0 group-hover:opacity-100 duration-300 transition-opacity"></motion.span>
+                    <motion.span className="absolute inset-0 bg-gradient-to-r from-blue-700/20 to-emerald-700/20 dark:from-blue-200/20 dark:to-emerald-200/20 opacity-0 group-hover:opacity-100 duration-300 transition-opacity"></motion.span>
                   </button>
+                </motion.div>
+                {/* Floating mail icon for detail */}
+                <motion.div
+                  className="fixed bottom-8 right-8 z-20 pointer-events-none select-none"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 0.18, y: 0 }}
+                  transition={{ duration: 1.2, delay: 1 }}
+                  whileHover={{ opacity: 0.3, scale: 1.05 }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 48 48"
+                    className="w-16 h-16 text-blue-400 dark:text-blue-200 animate-float"
+                  >
+                    <rect
+                      x="6"
+                      y="14"
+                      width="36"
+                      height="20"
+                      rx="5"
+                      fill="currentColor"
+                      opacity="0.2"
+                    />
+                    <path
+                      d="M8 16l16 12L40 16"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      opacity="0.5"
+                    />
+                  </svg>
                 </motion.div>
               </motion.form>
             ) : (
