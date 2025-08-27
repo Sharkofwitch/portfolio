@@ -42,17 +42,28 @@ const useSocialData = () => {
     try {
       const response = await fetch(`/api/social/${photoId}`);
       const data = await response.json();
-      if (response.ok) {
-        setSocialData((prev) => ({
-          ...prev,
-          [photoId]: data,
-        }));
-        return data;
-      }
-      throw new Error(data.error || "Failed to fetch social data");
+
+      // Always update the state with the response data, even if it contains an error
+      // This ensures we at least have the fallback values
+      setSocialData((prev) => ({
+        ...prev,
+        [photoId]: {
+          likes: data.likes ?? 0,
+          isLiked: data.isLiked ?? false,
+          comments: data.comments ?? [],
+        },
+      }));
+
+      return data;
     } catch (error) {
       console.error("Error fetching social data:", error);
-      return null;
+      // Return safe fallback data
+      const fallback = { likes: 0, isLiked: false, comments: [] };
+      setSocialData((prev) => ({
+        ...prev,
+        [photoId]: fallback,
+      }));
+      return fallback;
     }
   };
 

@@ -8,7 +8,6 @@ import {
   animate,
 } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
 import { useRef, useEffect, useState } from "react";
 
 export default function AboutPage() {
@@ -172,7 +171,6 @@ export default function AboutPage() {
               className="flex flex-wrap gap-4 items-center"
             >
               <Counter label="Photos" value={1248} />
-              <Counter label="Projects" value={32} />
               <Counter
                 label="Years"
                 value={Math.max(1, new Date().getFullYear() - 2023)}
@@ -182,13 +180,7 @@ export default function AboutPage() {
 
             {/* Skills / chips */}
             <motion.div variants={item} className="flex flex-wrap gap-2">
-              {[
-                "Composition",
-                "Film",
-                "Color Grading",
-                "Portraits",
-                "Street",
-              ].map((s, i) => (
+              {["Composition", "Film", "Portraits", "Street"].map((s, i) => (
                 <motion.span
                   key={s}
                   initial={{ opacity: 0, y: 6 }}
@@ -229,12 +221,12 @@ export default function AboutPage() {
                     desc: "Learned composition and mobile workflows.",
                   },
                   {
-                    label: "2025: Yashica FX1",
+                    label: "1970: Yashica FX1",
                     color: "bg-emerald-400",
                     desc: "Explored film and manual exposure.",
                   },
                   {
-                    label: "2026: Leica T (Typ 701)",
+                    label: "2014: Leica T (Typ 701)",
                     color: "bg-yellow-400",
                     desc: "Primary digital camera — refined color and workflow.",
                   },
@@ -303,21 +295,6 @@ export default function AboutPage() {
                   <circle cx="24" cy="26" r="5" fill="#fffde4" />
                 </svg>
               </motion.div>
-            </motion.div>
-
-            <motion.div variants={item} className="pt-4 flex gap-3">
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors focus-visible:ring-2 focus-visible:ring-blue-300"
-              >
-                Contact
-              </Link>
-              <Link
-                href="/gallery"
-                className="inline-flex items-center gap-3 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-              >
-                View Gallery
-              </Link>
             </motion.div>
           </motion.div>
         </div>

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 
 // GET /api/social/[photoId] - Get social data for a photo
 export async function GET(
@@ -8,6 +8,15 @@ export async function GET(
 ) {
   try {
     const photoId = params.photoId;
+
+    // Check if the photo exists first
+    const photo = await prisma.photo.findUnique({
+      where: { id: photoId },
+    });
+
+    if (!photo) {
+      return NextResponse.json({ error: "Photo not found" }, { status: 404 });
+    }
 
     // Get likes count and comments in parallel
     const [likesCount, comments] = await Promise.all([
@@ -24,7 +33,7 @@ export async function GET(
           createdAt: true,
         },
       }),
-    ]);
+    ]).catch(() => [0, []]); // Fallback values if queries fail
 
     // Check if the current user has liked the photo
     // For now, we'll use a simple check. Later you can add auth and check against userId
@@ -37,9 +46,12 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error fetching social data:", error);
-    return NextResponse.json(
-      { error: "Error fetching social data" },
-      { status: 500 },
-    );
+    // Return a safe response with empty data
+    return NextResponse.json({
+      likes: 0,
+      isLiked: false,
+      comments: [],
+      error: "Failed to load social data",
+    });
   }
 }
