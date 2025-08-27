@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node scripts/verify-vercel-env.js && npx prisma generate && npx prisma db push && npm run build",
+  "buildCommand": "npm run vercel-build",
   "installCommand": "npm install",
   "outputDirectory": ".next",
   "framework": "nextjs",
