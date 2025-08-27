@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 // POST /api/social/comment
 export async function POST(request: Request) {
   try {
-    const { photoId, text } = await request.json();
+    const { photoId, text, userName } = await request.json();
 
     if (!photoId || !text?.trim()) {
       return NextResponse.json(
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       data: {
         photoId,
         text: text.trim(),
-        userName: "Guest", // This will be replaced with actual username when auth is added
+        userName: userName?.trim() || "Guest",
         // userId will be added later with auth
       },
       select: {

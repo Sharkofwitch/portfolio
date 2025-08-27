@@ -20,6 +20,25 @@ interface ShareModalProps {
   photoTitle: string;
 }
 
+// Helper function to generate a browser fingerprint
+async function generateBrowserFingerprint() {
+  const components = [
+    navigator.userAgent,
+    navigator.language,
+    new Date().getTimezoneOffset(),
+    screen.width,
+    screen.height,
+    screen.colorDepth,
+  ].join("|");
+
+  // Use a hash function to create a consistent identifier
+  const encoder = new TextEncoder();
+  const data = encoder.encode(components);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 // Social data hooks with server-side persistence
 const useSocialData = () => {
   const [socialData, setSocialData] = useState<
@@ -69,23 +88,34 @@ const useSocialData = () => {
 
   const likePhoto = async (photoId: string) => {
     try {
-      const currentData = socialData[photoId];
-      const method = currentData?.isLiked ? "DELETE" : "POST";
+      // Create a unique identifier for likes based on browser fingerprint
+      const uniqueId = await generateBrowserFingerprint();
+
+      // Check if this browser has already liked the photo
+      const hasLiked = localStorage.getItem(`like-${photoId}`) === uniqueId;
+      const method = hasLiked ? "DELETE" : "POST";
 
       const response = await fetch("/api/social/like", {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoId }),
+        body: JSON.stringify({ photoId, uniqueId }),
       });
 
       const data = await response.json();
       if (response.ok) {
+        // Save or remove like state from localStorage
+        if (method === "POST") {
+          localStorage.setItem(`like-${photoId}`, uniqueId);
+        } else {
+          localStorage.removeItem(`like-${photoId}`);
+        }
+
         setSocialData((prev) => ({
           ...prev,
           [photoId]: {
             ...prev[photoId],
             likes: data.likes,
-            isLiked: data.isLiked,
+            isLiked: method === "POST",
           },
         }));
         return true;
@@ -97,12 +127,16 @@ const useSocialData = () => {
     }
   };
 
-  const addComment = async (photoId: string, text: string) => {
+  const addComment = async (
+    photoId: string,
+    text: string,
+    userName?: string,
+  ) => {
     try {
       const response = await fetch("/api/social/comment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoId, text }),
+        body: JSON.stringify({ photoId, text, userName }),
       });
 
       const data = await response.json();
@@ -325,17 +359,28 @@ interface CommentSectionProps {
   photoTitle: string;
 }
 
+// Comment Section Component
 const CommentSection: React.FC<CommentSectionProps> = ({
   isOpen,
   onClose,
   photoId,
 }) => {
   const [comment, setComment] = useState("");
+  const [userName, setUserName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addComment, getPhotoData } = useSocialData();
   const photoData = getPhotoData(photoId);
   const commentInputRef = React.useRef<HTMLInputElement>(null);
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
   const { showToast } = useToasts();
+
+  // Load saved username from localStorage if available
+  useEffect(() => {
+    const savedName = localStorage.getItem("lastUserName");
+    if (savedName) {
+      setUserName(savedName);
+    }
+  }, []);
 
   const animation = useSpring({
     opacity: isOpen ? 1 : 0,
@@ -352,14 +397,103 @@ const CommentSection: React.FC<CommentSectionProps> = ({
     }
   }, [isOpen]);
 
+  const generateRandomName = () => {
+    const adjectives = [
+      // Personality traits
+      "Happy",
+      "Curious",
+      "Creative",
+      "Gentle",
+      "Bright",
+      "Swift",
+      "Kind",
+      "Wise",
+      // Nature-inspired
+      "Misty",
+      "Starlit",
+      "Autumn",
+      "Solar",
+      "Lunar",
+      "Twilight",
+      "Forest",
+      "Ocean",
+      // Emotional states
+      "Serene",
+      "Whimsical",
+      "Dreamy",
+      "Mystic",
+      "Radiant",
+      "Ethereal",
+      "Tranquil",
+      "Vibrant",
+      // Abstract concepts
+      "Infinite",
+      "Cosmic",
+      "Silent",
+      "Eternal",
+      "Crystal",
+      "Phantom",
+      "Ancient",
+      "Astral",
+    ];
+    const nouns = [
+      // Travelers and seekers
+      "Explorer",
+      "Wanderer",
+      "Artist",
+      "Dreamer",
+      "Traveler",
+      "Observer",
+      "Visitor",
+      // Mystical beings
+      "Spirit",
+      "Phoenix",
+      "Dragon",
+      "Oracle",
+      "Muse",
+      "Guardian",
+      "Sage",
+      "Nomad",
+      // Nature elements
+      "Whisper",
+      "Wave",
+      "Storm",
+      "Shadow",
+      "Aurora",
+      "Breeze",
+      "Echo",
+      "Galaxy",
+      // Poetic objects
+      "Compass",
+      "Lantern",
+      "Chronicle",
+      "Prism",
+      "Scroll",
+      "Quill",
+      "Relic",
+      "Ember",
+    ];
+    const randomAdjective =
+      adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+    return `${randomAdjective}${randomNoun}`;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (comment.trim()) {
       setIsSubmitting(true);
 
+      // Use provided name or generate a random one
+      const finalUserName = userName.trim() || generateRandomName();
+
+      // Save username for future use
+      localStorage.setItem("lastUserName", finalUserName);
+      setUserName(finalUserName);
+
       // Simulate a small delay for better UX
       setTimeout(() => {
-        addComment(photoId, comment);
+        addComment(photoId, comment, finalUserName);
         showToast("Comment added successfully!", "success");
         setComment("");
         setIsSubmitting(false);
@@ -463,101 +597,112 @@ const CommentSection: React.FC<CommentSectionProps> = ({
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-auto">
-            <div className="border dark:border-gray-700 rounded-lg overflow-hidden flex">
+          <form onSubmit={handleSubmit} className="mt-auto space-y-3">
+            <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
               <input
-                ref={commentInputRef}
+                ref={nameInputRef}
                 type="text"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Add a comment..."
-                className="flex-grow p-3 bg-gray-50 dark:bg-gray-800 border-0 outline-none"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Your name (optional)"
+                className="w-full p-3 bg-gray-50 dark:bg-gray-800 border-0 border-b dark:border-gray-700 outline-none text-sm"
                 disabled={isSubmitting}
               />
-              <motion.button
-                type="submit"
-                disabled={!comment.trim() || isSubmitting}
-                className="px-4 py-2 bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:bg-blue-400 flex items-center justify-center min-w-[80px]"
-                whileHover={{ backgroundColor: "#2563eb" }}
-                whileTap={{ scale: 0.97 }}
-              >
-                {isSubmitting ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1,
-                      ease: "linear",
-                    }}
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
+              <div className="flex">
+                <input
+                  ref={commentInputRef}
+                  type="text"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="flex-grow p-3 bg-gray-50 dark:bg-gray-800 border-0 outline-none"
+                  disabled={isSubmitting}
+                />
+                <motion.button
+                  type="submit"
+                  disabled={!comment.trim() || isSubmitting}
+                  className="px-4 py-2 bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:bg-blue-400 flex items-center justify-center min-w-[80px]"
+                  whileHover={{ backgroundColor: "#2563eb" }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  {isSubmitting ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 1,
+                        ease: "linear",
+                      }}
                     >
-                      <path
-                        d="M12 4.75V6.25"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      ></path>
-                      <path
-                        d="M17.127 6.873L16.073 7.927"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      ></path>
-                      <path
-                        d="M19.25 12L17.75 12"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      ></path>
-                      <path
-                        d="M17.127 17.127L16.073 16.073"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      ></path>
-                      <path
-                        d="M12 19.25V17.75"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      ></path>
-                      <path
-                        d="M7.927 16.073L6.873 17.127"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      ></path>
-                      <path
-                        d="M6.25 12L4.75 12"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      ></path>
-                      <path
-                        d="M7.927 7.927L6.873 6.873"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      ></path>
-                    </svg>
-                  </motion.div>
-                ) : (
-                  "Post"
-                )}
-              </motion.button>
+                      <svg
+                        className="w-5 h-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M12 4.75V6.25"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></path>
+                        <path
+                          d="M17.127 6.873L16.073 7.927"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></path>
+                        <path
+                          d="M19.25 12L17.75 12"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></path>
+                        <path
+                          d="M17.127 17.127L16.073 16.073"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></path>
+                        <path
+                          d="M12 19.25V17.75"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></path>
+                        <path
+                          d="M7.927 16.073L6.873 17.127"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></path>
+                        <path
+                          d="M6.25 12L4.75 12"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></path>
+                        <path
+                          d="M7.927 7.927L6.873 6.873"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></path>
+                      </svg>
+                    </motion.div>
+                  ) : (
+                    "Post"
+                  )}
+                </motion.button>
+              </div>
             </div>
           </form>
         </animated.div>
