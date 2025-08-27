@@ -1,4 +1,6 @@
 // This is your Prisma schema file
+// Learn more about it at https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,30 +10,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  password  String
-  role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model Photo {
-  id          String   @id @default(cuid())
-  src         String   @unique // The path to the image file
-  title       String
-  alt         String
-  width       Int      @default(1600)
-  height      Int      @default(1067)
+  id          String    @id @default(cuid())
+  src         String
+  title       String?
+  alt         String?
+  width       Int       @default(1600)
+  height      Int       @default(1067)
   year        String?
   location    String?
   camera      String?
   description String?
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  likes       Like[]
+  comments    Comment[]
+}
 
-  @@index([createdAt(sort: Desc)])
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  photoId   String
+  userId    String?  // Optional for now, required when auth is added
+  photo     Photo    @relation(fields: [photoId], references: [id])
+
+  @@unique([photoId, userId], name: "like_unique_constraint") // Prevents multiple likes from same user
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String
+  userName  String   // Will be linked to User model later
+  userId    String?  // Optional for now, required when auth is added
+  createdAt DateTime @default(now())
+  photoId   String
+  photo     Photo    @relation(fields: [photoId], references: [id])
 }

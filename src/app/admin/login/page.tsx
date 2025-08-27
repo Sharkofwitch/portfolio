@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
@@ -10,7 +9,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +23,7 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
+        callbackUrl: "/admin",
       });
 
       console.log("Sign in result:", result);
@@ -45,24 +44,14 @@ export default function LoginPage() {
         }
 
         try {
-          // Ensure session is fully established before redirect with a longer timeout
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          // Show success message briefly
+          await new Promise((resolve) => setTimeout(resolve, 1000));
 
-          // Force a session update before redirect
-          console.log("Forcing session update before redirect...");
-          const response = await fetch("/api/auth/session");
-          const session = await response.json();
-          console.log("Current session state:", session);
-
-          console.log("Redirecting to admin dashboard...");
-          // Using push instead of replace for more reliable navigation
-          router.push("/admin");
-          // Refresh after a short delay to ensure the page reloads with the new session
-          setTimeout(() => router.refresh(), 500);
+          // Force a hard navigation to admin page
+          window.location.href = "/admin";
         } catch (error) {
           console.error("Error during redirect:", error);
-          // Fallback to direct window location change if router fails
-          window.location.href = "/admin";
+          setError("Login successful but redirect failed. Please try again.");
         }
       }
     } catch (error) {

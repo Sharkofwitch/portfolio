@@ -80,7 +80,7 @@ export default function Footer() {
             </h4>
             <div className="flex flex-col space-y-2">
               <a
-                href="https://instagram.com/jakob.szrk"
+                href="https://instagram.com/szark_org"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center group touch-manipulation no-tap-highlight py-1"

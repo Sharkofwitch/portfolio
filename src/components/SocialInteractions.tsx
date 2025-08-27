@@ -20,89 +20,106 @@ interface ShareModalProps {
   photoTitle: string;
 }
 
-// Social data storage with localStorage persistence
+// Social data hooks with server-side persistence
 const useSocialData = () => {
-  // Define the structure of our social data
-  type SocialDataType = Record<
-    string,
-    {
-      likes: number;
-      isLiked: boolean;
-      comments: { id: string; user: string; text: string; date: string }[];
-    }
-  >;
-
-  // Initialize state from localStorage if available
-  const [socialData, setSocialData] = useState<SocialDataType>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const savedData = localStorage.getItem("portfolioSocialData");
-        if (savedData) {
-          return JSON.parse(savedData);
-        }
-      } catch (err) {
-        console.error("Error loading social data from localStorage:", err);
+  const [socialData, setSocialData] = useState<
+    Record<
+      string,
+      {
+        likes: number;
+        isLiked: boolean;
+        comments: {
+          id: string;
+          userName: string;
+          text: string;
+          createdAt: string;
+        }[];
       }
-    }
-    return {};
-  });
+    >
+  >({});
 
-  // Save to localStorage whenever data changes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("portfolioSocialData", JSON.stringify(socialData));
-      } catch (err) {
-        console.error("Error saving social data to localStorage:", err);
+  const fetchPhotoData = async (photoId: string) => {
+    try {
+      const response = await fetch(`/api/social/${photoId}`);
+      const data = await response.json();
+      if (response.ok) {
+        setSocialData((prev) => ({
+          ...prev,
+          [photoId]: data,
+        }));
+        return data;
       }
+      throw new Error(data.error || "Failed to fetch social data");
+    } catch (error) {
+      console.error("Error fetching social data:", error);
+      return null;
     }
-  }, [socialData]);
-
-  const likePhoto = (photoId: string) => {
-    setSocialData((prev) => {
-      const current = prev[photoId] || {
-        likes: 0,
-        isLiked: false,
-        comments: [],
-      };
-      return {
-        ...prev,
-        [photoId]: {
-          ...current,
-          likes: current.isLiked ? current.likes - 1 : current.likes + 1,
-          isLiked: !current.isLiked,
-        },
-      };
-    });
   };
 
-  const addComment = (photoId: string, text: string) => {
-    setSocialData((prev) => {
-      const current = prev[photoId] || {
-        likes: 0,
-        isLiked: false,
-        comments: [],
-      };
-      return {
-        ...prev,
-        [photoId]: {
-          ...current,
-          comments: [
-            ...current.comments,
-            {
-              id: Math.random().toString(36).substring(2, 9),
-              user: "Guest",
-              text,
-              date: new Date().toISOString(), // Store as string for JSON compatibility
-            },
-          ],
-        },
-      };
-    });
+  const likePhoto = async (photoId: string) => {
+    try {
+      const currentData = socialData[photoId];
+      const method = currentData?.isLiked ? "DELETE" : "POST";
+
+      const response = await fetch("/api/social/like", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoId }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSocialData((prev) => ({
+          ...prev,
+          [photoId]: {
+            ...prev[photoId],
+            likes: data.likes,
+            isLiked: data.isLiked,
+          },
+        }));
+        return true;
+      }
+      throw new Error(data.error || "Failed to process like");
+    } catch (error) {
+      console.error("Error processing like:", error);
+      return false;
+    }
+  };
+
+  const addComment = async (photoId: string, text: string) => {
+    try {
+      const response = await fetch("/api/social/comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoId, text }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSocialData((prev) => ({
+          ...prev,
+          [photoId]: {
+            ...prev[photoId],
+            comments: [data.comment, ...(prev[photoId]?.comments || [])],
+          },
+        }));
+        return true;
+      }
+      throw new Error(data.error || "Failed to add comment");
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      return false;
+    }
   };
 
   const getPhotoData = (photoId: string) => {
-    return socialData[photoId] || { likes: 0, isLiked: false, comments: [] };
+    const data = socialData[photoId];
+    if (!data) {
+      // Fetch if we don't have the data
+      fetchPhotoData(photoId);
+      return { likes: 0, isLiked: false, comments: [] };
+    }
+    return data;
   };
 
   return { likePhoto, addComment, getPhotoData };
@@ -416,22 +433,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({
                   >
                     <div className="flex items-center mb-1">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mr-2 text-white">
-                        {comment.user.charAt(0).toUpperCase()}
+                        {comment.userName.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium">{comment.user}</span>
+                      <span className="font-medium">{comment.userName}</span>
                       <motion.span
                         className="ml-auto text-xs text-gray-500"
-                        title={
-                          typeof comment.date === "string"
-                            ? new Date(comment.date).toLocaleString()
-                            : ""
-                        }
+                        title={new Date(comment.createdAt).toLocaleString()}
                       >
-                        {formatDate(
-                          typeof comment.date === "string"
-                            ? comment.date
-                            : new Date().toISOString(),
-                        )}
+                        {formatDate(comment.createdAt)}
                       </motion.span>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 pl-10">
