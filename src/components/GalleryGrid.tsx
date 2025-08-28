@@ -184,7 +184,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   return (
     <motion.div
       variants={variants}
-      className="relative rounded-lg overflow-hidden aspect-square shadow-md hover:shadow-xl transition-shadow duration-300"
+      className="relative rounded-lg overflow-hidden aspect-square glass-card group"
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -216,19 +216,19 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           src={getImageUrl()}
           alt={photo.alt || photo.title || "Photography"}
           fill
-          className={`object-cover transition-opacity duration-300 ${
+          className={`object-cover transition-all duration-500 vintage-filter ${
             imageLoaded ? "opacity-100" : "opacity-0"
-          }`}
+          } group-hover:scale-105`}
           onLoadingComplete={() => setImageLoaded(true)}
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
         />
 
         {/* Overlay with info and actions */}
         <motion.div
-          className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-between p-4 text-white"
+          className="absolute inset-0 glass-effect flex flex-col justify-between p-4 text-white opacity-0 group-hover:opacity-100"
           initial={{ opacity: 0 }}
           animate={{ opacity: isHovered ? 1 : 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.3 }}
         >
           <div>
             <h3 className="text-lg font-semibold truncate">{photo.title}</h3>
@@ -251,7 +251,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onNavigate}
-              className="bg-white/20 backdrop-blur-sm text-white py-2 px-3 rounded-md hover:bg-white/30 transition-all duration-300 text-sm font-medium"
+              className="apple-button-secondary hover:scale-105 hover:bg-opacity-90 transition-all duration-300"
             >
               View Photo
             </motion.button>
@@ -341,7 +341,7 @@ function PhotoModal({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ type: "spring", damping: 20, stiffness: 300 }}
-        className="relative z-10 w-full max-w-5xl p-2 sm:p-4 overflow-hidden flex flex-col"
+        className="relative z-10 w-full max-w-5xl p-2 sm:p-4 overflow-hidden flex flex-col animate-float"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -368,9 +368,9 @@ function PhotoModal({
         {/* Image container */}
         <div
           ref={imageRef}
-          className={`relative w-full aspect-auto overflow-hidden bg-gray-900 rounded-lg sm:rounded-xl shadow-lg border border-white/10 ${
+          className={`relative w-full aspect-auto overflow-hidden frosted-glass ${
             isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"
-          } touch-manipulation`}
+          } touch-manipulation hover:shadow-lg dark:hover:shadow-xl transition-all duration-300`}
           onClick={handleImageClick}
           onMouseMove={handleMouseMove}
         >
@@ -415,8 +415,9 @@ function PhotoModal({
               alt={photo.alt}
               fill
               className={`
-                object-contain transition-all duration-300 vintage-filter
-                ${isZoomed ? "scale-150" : "scale-100"}
+                object-contain transition-all duration-500 vintage-filter
+                ${isZoomed ? "scale-150" : "scale-100 hover:scale-105"}
+                animate-float
               `}
               sizes="(max-width: 1400px) 100vw, 1400px"
               priority
@@ -483,7 +484,7 @@ function PhotoModal({
                   }-${photo.id}`;
                   router.push(`/gallery/${slug}`);
                 }}
-                className="bg-white/20 backdrop-blur-sm text-white py-2 px-4 rounded-md hover:bg-white/30 transition-all duration-300 text-sm font-medium flex items-center justify-center"
+                className="apple-button-secondary flex items-center justify-center hover:animate-shimmer"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

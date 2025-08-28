@@ -1,160 +1,93 @@
-# Photography Portfolio
+# Modern Photography Portfolio
 
-A modern, Apple-inspired photography portfolio website built with Next.js, featuring parallax effects, responsive design, and an integrated admin panel for photo management.
+A sleek, Next.js-powered photography portfolio with Apple-inspired design, featuring seamless photo management and stunning visual effects.
 
 ![Portfolio Preview](public/camera-favicon.svg)
 
-## Recent Updates
+## ✨ Key Features
 
-- **Universal Image Loading**: Added robust system to handle various image paths and formats
-- **Path Consistency**: Implemented solution for timestamp-prefixed images and path inconsistencies
-- **Comprehensive Testing**: Created verification scripts for database consistency and image loading
-- **Documentation**: Added detailed documentation on the image system architecture
-- **Database Tools**: Created utilities to maintain consistent database records
+- 📱 **Responsive Design** with modern glass effects and smooth animations
+- 🖼️ **Dynamic Photo Gallery** with filtering and lightbox viewing
+- 🔒 **Secure Admin Panel** for effortless photo management
+- 🌗 **Smart Dark Mode** for elegant viewing experience
+- ⚡ **Fast Performance** with optimized Core Web Vitals
+- ☁️ **Nextcloud Integration** for robust photo storage
+- 🔄 **Universal Image Loading** with smart path handling
+- 🎯 **SEO Optimized** for maximum visibility
 
-## Features
-
-- **Responsive Design**: Works seamlessly on mobile, tablet, and desktop
-- **Apple-Inspired UI**: Modern, clean aesthetic with glass effects and smooth animations
-- **Photo Gallery**: Dynamic photo grid with filtering and lightbox viewing
-- **Admin Panel**: Secure admin interface for photo management
-- **Dark Mode**: Elegant dark mode implementation
-- **SEO Optimized**: Built with best practices for search engine visibility
-- **Fast Performance**: Optimized for Core Web Vitals
-- **Nextcloud Integration**: Store and manage photos using Nextcloud
-- **Universal Image Loading**: Robust solution for handling various image paths and formats
-- **Automatic Path Correction**: Intelligently handles timestamp-prefixed images and path inconsistencies
-
-## Tech Stack
+## 🛠️ Tech Stack
 
 - **Framework**: [Next.js 15](https://nextjs.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
-- **Authentication**: [NextAuth.js](https://next-auth.js.org/)
+- **Auth**: [NextAuth.js](https://next-auth.js.org/)
 - **Database**: PostgreSQL with [Prisma](https://www.prisma.io/)
-- **Storage**: [Nextcloud](https://nextcloud.com/) for photo management
-- **Deployment**: [Vercel](https://vercel.com)
+- **Storage**: [Nextcloud](https://nextcloud.com/)
 - **Deployment**: [Vercel](https://vercel.com)
 
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
 - Node.js 18+ and npm/yarn
 - PostgreSQL database
 
-### Installation
-
-1. Clone this repository
+### Setup
 
 ```bash
+# Clone and install
 git clone https://github.com/yourusername/photography-portfolio.git
 cd photography-portfolio
-```
-
-2. Install dependencies
-
-```bash
 npm install
-# or
-yarn install
-```
 
-3. Set up environment variables
-
-```bash
+# Configure environment
 cp .env.example .env.local
-```
 
-Edit `.env.local` with your database credentials and other environment variables.
-
-4. Set up the database
-
-```bash
+# Setup database
 npx prisma migrate dev
-```
 
-5. Start the development server
-
-```bash
+# Start development server
 npm run dev
-# or
-yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view your portfolio.
 
-## Project Structure
+## 📂 Project Structure
 
-```
-├── src/
-│   ├── app/               # Next.js app router pages
-│   │   ├── about/         # About page
-│   │   ├── admin/         # Admin area (protected)
-│   │   ├── api/           # API routes
-│   │   │   ├── photos/    # Universal image loading API
-│   │   │   └── ...
-│   │   ├── contact/       # Contact page
-│   │   ├── gallery/       # Photo gallery
-│   │   └── page.tsx       # Homepage
-│   ├── components/        # Reusable components
-│   ├── lib/               # Utility functions and types
-│   │   ├── nextcloud.ts   # Nextcloud integration
-│   │   └── ...
-│   └── data/              # Static data
-│
-├── scripts/               # Utility scripts
-│   ├── verify-universal-solution.js  # Test image loading solution
-│   ├── verify-database-consistency.js # Database path verification
-│   ├── refresh-database.js # Ensure consistent database records
-│   └── ...
-│
-└── public/                # Static assets
-    └── photos/            # Local photo storage
+```text
+src/
+├── app/          # Next.js pages and API routes
+├── components/   # Reusable UI components
+├── lib/         # Utilities and business logic
+└── data/        # Static data and configurations
 ```
 
-## Deployment
+## 🌐 Deployment
 
-### Vercel Deployment
+### Vercel (Recommended)
 
-This project is optimized for deployment on Vercel:
-
-1. Push your code to GitHub
-2. Import the project in Vercel
-3. Configure environment variables
+1. Push to GitHub
+2. Import to Vercel
+3. Configure env vars
 4. Deploy
 
-### Other Hosting Options
+For other deployment options and troubleshooting, see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).
 
-You can also deploy this project on any hosting service that supports Next.js, such as:
+## 📖 Documentation
 
-- Netlify
-- AWS Amplify
-- DigitalOcean App Platform
-- Self-hosted with Docker
+- [Image System](PORTFOLIO_IMAGE_SYSTEM.md)
+- [Social Features](SOCIAL_FEATURES.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
 
-## Universal Image Loading Solution
+## 🔑 Admin Access
 
-This project implements a robust universal image loading system that handles various path formats and filename patterns:
+1. Create admin account or use default credentials
+2. Visit `/admin/login`
+3. Start managing your photos
 
-- **Multi-Strategy Approach**: Images are searched in the public directory, database records, and Nextcloud storage
-- **Path Pattern Recognition**: Handles timestamp-prefixed filenames (e.g., "1747175977747-playground-poise.jpeg")
-- **Automatic Path Generation**: Creates various path combinations to find images regardless of path inconsistencies
-- **Fallback Mechanism**: Gracefully falls back to placeholder images when needed
+## 📄 License
 
-For more details on the implementation, check the [PORTFOLIO_IMAGE_SYSTEM.md](PORTFOLIO_IMAGE_SYSTEM.md) document.
-
-## Admin Panel
-
-To access the admin panel:
-
-1. Create an admin account during the initial setup, or use the default credentials in your `.env.local` file
-2. Navigate to `/admin/login` and log in
-3. Manage your photos through the admin interface
-
-## Authentication
-
-This project uses NextAuth.js for authentication. You can modify the authentication providers in `src/app/api/auth/[...nextauth]/route.ts`.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Nextcloud Integration and Image System
 
@@ -218,10 +151,6 @@ If you encounter issues with images not loading properly:
 - **Missing Images**: All missing images will gracefully fall back to a placeholder
 
 For deployment-related issues, check the [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) document.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
