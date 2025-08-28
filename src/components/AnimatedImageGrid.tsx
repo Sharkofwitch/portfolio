@@ -58,13 +58,13 @@ export default function AnimatedImageGrid({
   const getHoverEffectClasses = (effect: string) => {
     switch (effect) {
       case "zoom":
-        return "vintage-filter group-hover:scale-105";
+        return "group-hover:scale-105 transition-transform duration-500 ease-out";
       case "lift":
-        return "hover:-translate-y-2 hover:shadow-xl dark:hover:shadow-2xl transition-all duration-500";
+        return "";
       case "tilt":
-        return "hover:animate-float";
+        return "";
       case "fade":
-        return "group-hover:opacity-80 transition-opacity duration-500";
+        return "group-hover:opacity-80 transition-opacity duration-300";
       default:
         return "";
     }
@@ -126,9 +126,7 @@ export default function AnimatedImageGrid({
         <motion.div
           key={index}
           variants={item}
-          className={`group overflow-hidden ${getRoundedClasses(rounded)} ${
-            hoverEffect === "lift" ? "hover-lift" : ""
-          } relative glass-card touch-manipulation no-tap-highlight hover:animate-pulse-soft`}
+          className={`group overflow-hidden ${getRoundedClasses(rounded)} ${hoverEffect === "lift" ? "hover:-translate-y-2 transition-transform duration-300" : ""} relative shadow-apple dark:shadow-apple-dark touch-manipulation no-tap-highlight`}
           style={{
             aspectRatio:
               gridLayout === "uniform" ? image.aspectRatio || "1/1" : "auto",
@@ -154,7 +152,7 @@ export default function AnimatedImageGrid({
           />
 
           {image.caption && (
-            <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 glass-effect text-white opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-500">
+            <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 bg-gradient-to-t from-black/80 to-transparent text-white opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
               <p className="text-xs sm:text-sm font-light">{image.caption}</p>
             </div>
           )}

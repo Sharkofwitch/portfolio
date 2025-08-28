@@ -67,15 +67,32 @@ export default function GalleryGrid({ photos }: GalleryGridProps) {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
+        staggerChildren: 0.12,
+        delayChildren: 0.1,
       },
     },
   };
 
   // Item variants for staggered animations
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 },
+    hidden: {
+      opacity: 0,
+      y: 30,
+      rotateX: 5,
+      scale: 0.95,
+    },
+    show: {
+      opacity: 1,
+      y: 0,
+      rotateX: 0,
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 25,
+        mass: 0.5,
+      },
+    },
   };
 
   return (
@@ -114,10 +131,14 @@ export default function GalleryGrid({ photos }: GalleryGridProps) {
         )}
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 px-4 sm:px-6 md:px-8"
           variants={containerVariants}
           initial="hidden"
           animate="show"
+          style={{
+            perspective: "1000px",
+            perspectiveOrigin: "center",
+          }}
         >
           {visiblePhotos.map((photo) => (
             <PhotoCard
@@ -184,12 +205,20 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   return (
     <motion.div
       variants={variants}
-      className="relative rounded-lg overflow-hidden aspect-square glass-card group"
+      className="relative rounded-2xl overflow-hidden aspect-square shadow-lg hover:shadow-2xl transition-all duration-500"
+      style={{
+        background: "rgba(255, 255, 255, 0.1)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{
+        scale: 1.03,
+        transition: { type: "spring", stiffness: 300, damping: 20 },
+      }}
+      whileTap={{ scale: 0.97 }}
     >
       <div className="relative w-full h-full">
         {/* Image placeholder before loading */}
@@ -216,42 +245,68 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           src={getImageUrl()}
           alt={photo.alt || photo.title || "Photography"}
           fill
-          className={`object-cover transition-all duration-500 vintage-filter ${
+          className={`object-cover transition-opacity duration-300 ${
             imageLoaded ? "opacity-100" : "opacity-0"
-          } group-hover:scale-105`}
+          }`}
           onLoadingComplete={() => setImageLoaded(true)}
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
         />
 
         {/* Overlay with info and actions */}
         <motion.div
-          className="absolute inset-0 glass-effect flex flex-col justify-between p-4 text-white opacity-0 group-hover:opacity-100"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isHovered ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
+          className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-between p-6 text-white"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
           <div>
-            <h3 className="text-lg font-semibold truncate">{photo.title}</h3>
+            <h3
+              className="text-xl font-medium tracking-tight truncate"
+              style={{
+                fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+              }}
+            >
+              {photo.title}
+            </h3>
             {photo.description && (
-              <p className="text-sm line-clamp-2 text-gray-200">
+              <p
+                className="text-sm leading-relaxed line-clamp-2 text-white/90 mt-2"
+                style={{
+                  fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+                }}
+              >
                 {photo.description}
               </p>
             )}
           </div>
 
           <div className="flex justify-between items-end">
-            <SocialActions
-              photoId={photo.id}
-              photoTitle={photo.title || "Photo"}
-              size={20}
-              className="text-white"
-            />
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <SocialActions
+                photoId={photo.id}
+                photoTitle={photo.title || "Photo"}
+                size={22}
+                className="text-white opacity-90 hover:opacity-100"
+              />
+            </motion.div>
 
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "rgba(255, 255, 255, 0.25)",
+              }}
+              whileTap={{ scale: 0.98 }}
               onClick={onNavigate}
-              className="apple-button-secondary hover:scale-105 hover:bg-opacity-90 transition-all duration-300"
+              className="bg-white/15 backdrop-blur-md text-white py-2.5 px-4 rounded-full 
+                         transition-all duration-300 text-sm font-medium tracking-wide
+                         border border-white/10 shadow-lg"
+              style={{
+                fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+              }}
             >
               View Photo
             </motion.button>
@@ -341,7 +396,7 @@ function PhotoModal({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ type: "spring", damping: 20, stiffness: 300 }}
-        className="relative z-10 w-full max-w-5xl p-2 sm:p-4 overflow-hidden flex flex-col animate-float"
+        className="relative z-10 w-full max-w-5xl p-2 sm:p-4 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -368,9 +423,9 @@ function PhotoModal({
         {/* Image container */}
         <div
           ref={imageRef}
-          className={`relative w-full aspect-auto overflow-hidden frosted-glass ${
+          className={`relative w-full aspect-auto overflow-hidden bg-gray-900 rounded-lg sm:rounded-xl shadow-lg border border-white/10 ${
             isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"
-          } touch-manipulation hover:shadow-lg dark:hover:shadow-xl transition-all duration-300`}
+          } touch-manipulation`}
           onClick={handleImageClick}
           onMouseMove={handleMouseMove}
         >
@@ -415,9 +470,8 @@ function PhotoModal({
               alt={photo.alt}
               fill
               className={`
-                object-contain transition-all duration-500 vintage-filter
-                ${isZoomed ? "scale-150" : "scale-100 hover:scale-105"}
-                animate-float
+                object-contain transition-all duration-300 vintage-filter
+                ${isZoomed ? "scale-150" : "scale-100"}
               `}
               sizes="(max-width: 1400px) 100vw, 1400px"
               priority
@@ -484,7 +538,7 @@ function PhotoModal({
                   }-${photo.id}`;
                   router.push(`/gallery/${slug}`);
                 }}
-                className="apple-button-secondary flex items-center justify-center hover:animate-shimmer"
+                className="bg-white/20 backdrop-blur-sm text-white py-2 px-4 rounded-md hover:bg-white/30 transition-all duration-300 text-sm font-medium flex items-center justify-center"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

@@ -21,8 +21,6 @@ const config: Config = {
       animation: {
         'fade-in': 'fade-in 0.5s ease-out',
         'slide-up': 'slide-up 0.5s ease-out',
-        'float': 'float 6s ease-in-out infinite',
-        'shimmer': 'shimmer 2.5s linear infinite',
       },
       keyframes: {
         'fade-in': {
@@ -33,29 +31,6 @@ const config: Config = {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
-        'float': {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
-        },
-        'shimmer': {
-          '0%': { backgroundPosition: '-700px 0' },
-          '100%': { backgroundPosition: '700px 0' },
-        },
-        'pulse-soft': {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.85' },
-        },
-      },
-      boxShadow: {
-        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-        'glass-hover': '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-        'glass-dark': '0 8px 32px 0 rgba(255, 255, 255, 0.08)',
-        'glass-dark-hover': '0 8px 32px 0 rgba(255, 255, 255, 0.15)',
-      },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'gradient-shine': 'linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.1) 50%, transparent 75%)',
       },
     },
   },
