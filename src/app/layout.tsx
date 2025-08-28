@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import AuthProvider from "@/components/AuthProvider";
 import ToastProvider from "@/components/ToastProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import PageTransition from "@/components/PageTransition";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -50,11 +51,13 @@ export default function RootLayout({
           <ErrorBoundary>
             <ToastProvider>
               {!children?.toString().includes("/admin") && <Header />}
-              <main
-                className={`flex-grow ${!children?.toString().includes("/admin") ? "pt-16 md:pt-20" : ""}`}
-              >
-                <ErrorBoundary>{children}</ErrorBoundary>
-              </main>
+              <PageTransition>
+                <main
+                  className={`flex-grow ${!children?.toString().includes("/admin") ? "pt-16 md:pt-20" : ""}`}
+                >
+                  <ErrorBoundary>{children}</ErrorBoundary>
+                </main>
+              </PageTransition>
               {!children?.toString().includes("/admin") && <Footer />}
               <Analytics />
             </ToastProvider>

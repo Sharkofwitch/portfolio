@@ -7,6 +7,8 @@ import { useState, useEffect, useRef } from "react";
 import { PhotoMetadata } from "@/lib/photo-types";
 import FullscreenPresentation from "@/components/FullscreenPresentation";
 import AnimatedImageGrid from "@/components/AnimatedImageGrid";
+import AnimatedHeading from "@/components/AnimatedHeading";
+import HoverCard from "@/components/HoverCard";
 
 export default function Home() {
   const [featuredPhotos, setFeaturedPhotos] = useState<PhotoMetadata[]>([]);
@@ -136,10 +138,10 @@ export default function Home() {
               <span className="inline-block font-mono text-xs px-3 py-1 rounded-full bg-white/10 text-white/60 mb-4">
                 ABOUT THE GALLERY
               </span>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white leading-tight">
-                Exploring Visual Stories
-              </h2>
-              <p className="text-white/70 text-lg leading-relaxed">
+              <AnimatedHeading className="text-4xl md:text-5xl lg:text-6xl font-serif text-white leading-tight">
+                Exploring Visual Stories Through Time
+              </AnimatedHeading>
+              <p className="text-white/70 text-lg leading-relaxed backdrop-blur-sm bg-white/5 p-6 rounded-2xl border border-white/10">
                 From iPhone captures to analog film, this gallery represents a
                 journey through different mediums, each bringing its own
                 character and soul to the moments preserved.
@@ -222,13 +224,18 @@ export default function Home() {
             <span className="font-mono text-xs text-white/50 uppercase tracking-wider mb-4 block">
               Portfolio
             </span>
-            <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">
+            <AnimatedHeading
+              className="text-4xl md:text-5xl font-serif text-white mb-6"
+              glowColor="rgba(200, 200, 255, 0.2)"
+            >
               Recent Works
-            </h2>
-            <p className="text-white/70 max-w-2xl mx-auto">
-              A collection of moments frozen in time, showcasing a blend of
-              digital precision and analog character.
-            </p>
+            </AnimatedHeading>
+            <HoverCard className="inline-block max-w-2xl">
+              <p className="text-white/70">
+                A collection of moments frozen in time, showcasing a blend of
+                digital precision and analog character.
+              </p>
+            </HoverCard>
           </motion.div>
 
           {loading ? (
@@ -283,7 +290,7 @@ export default function Home() {
       </section>
 
       {/* Call to Action Section */}
-      <section className="py-24 bg-gradient-to-b from-gray-900 to-black relative overflow-hidden">
+      <section className="py-32 md:py-40 bg-gradient-to-b from-gray-900 to-black relative overflow-hidden">
         <div className="absolute inset-0">
           {featuredPhotos[1] && (
             <Image
@@ -295,9 +302,15 @@ export default function Home() {
               alt="Contact background"
               fill
               className="object-cover opacity-20"
+              priority
             />
           )}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent backdrop-blur-sm"
+            initial={{ backdropFilter: "blur(0px)" }}
+            whileInView={{ backdropFilter: "blur(10px)" }}
+            transition={{ duration: 1 }}
+          />
         </div>
 
         <motion.div
@@ -307,20 +320,57 @@ export default function Home() {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.8 }}
         >
-          <span className="font-mono text-xs text-white/50 uppercase tracking-wider mb-4 block">
+          <motion.span
+            className="inline-block font-mono text-xs text-white/50 uppercase tracking-wider mb-4 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md"
+            whileHover={{
+              scale: 1.05,
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+            }}
+          >
             Get in Touch
-          </span>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white mb-8 leading-tight">
+          </motion.span>
+
+          <AnimatedHeading className="text-4xl md:text-5xl lg:text-6xl font-serif text-white mb-8 leading-tight">
             Interested in Collaborations or Prints?
-          </h2>
-          <p className="text-white/70 text-lg mb-12 max-w-2xl mx-auto">
-            Whether you&apos;re interested in discussing a potential project,
-            purchasing prints, or simply sharing your thoughts about
-            photography, I&apos;d love to hear from you.
-          </p>
-          <Link href="/contact" className="apple-button text-base py-3 px-8">
-            Contact Me
-          </Link>
+          </AnimatedHeading>
+
+          <HoverCard className="mb-12 backdrop-blur-md">
+            <p className="text-white/70 text-lg max-w-2xl mx-auto">
+              Whether you&apos;re interested in discussing a potential project,
+              purchasing prints, or simply sharing your thoughts about
+              photography, I&apos;d love to hear from you.
+            </p>
+          </HoverCard>
+
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
+            <Link
+              href="/contact"
+              className="apple-button text-base py-3 px-8 inline-flex items-center gap-2 group"
+            >
+              <span>Contact Me</span>
+              <motion.svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                initial={{ x: 0 }}
+                animate={{ x: [0, 5, 0] }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </motion.svg>
+            </Link>
+          </motion.div>
         </motion.div>
       </section>
     </main>
