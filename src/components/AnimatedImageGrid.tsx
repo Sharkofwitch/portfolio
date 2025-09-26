@@ -12,7 +12,7 @@ interface GridImage {
 }
 
 interface AnimatedImageGridProps {
-  images: GridImage[];
+  images?: GridImage[];
   columns?: number;
   hoverEffect?: 'zoom' | 'fade';
   rounded?: string;
@@ -129,7 +129,7 @@ const ImageWithErrorHandling = ({
 };
 
 export default function AnimatedImageGrid({ 
-  images, 
+  images = [], 
   columns = 3,
   hoverEffect = 'zoom',
   rounded = 'lg',
