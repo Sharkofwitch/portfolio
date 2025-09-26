@@ -38,6 +38,31 @@ const ZoomImage: React.FC<ZoomImageProps> = ({ src, alt, isOpen, onClose }) => {
   }, [isOpen]);
 
   // Handle keyboard events
+  // Handle keyboard events (moved below so callbacks exist before being referenced)
+
+  const handleZoomIn = useCallback(() => {
+    setScale(prev => Math.min(prev * 1.5, 5));
+    setIsZoomed(true);
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setScale(prev => {
+      const newScale = Math.max(prev / 1.5, 1);
+      if (newScale <= 1) {
+        setIsZoomed(false);
+        setPosition({ x: 0, y: 0 });
+      }
+      return newScale;
+    });
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+    setIsZoomed(false);
+  }, []);
+
+  // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
@@ -65,29 +90,7 @@ const ZoomImage: React.FC<ZoomImageProps> = ({ src, alt, isOpen, onClose }) => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  const handleZoomIn = useCallback(() => {
-    setScale(prev => Math.min(prev * 1.5, 5));
-    setIsZoomed(true);
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    setScale(prev => {
-      const newScale = Math.max(prev / 1.5, 1);
-      if (newScale <= 1) {
-        setIsZoomed(false);
-        setPosition({ x: 0, y: 0 });
-      }
-      return newScale;
-    });
-  }, []);
-
-  const resetZoom = useCallback(() => {
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
-    setIsZoomed(false);
-  }, []);
+  }, [isOpen, onClose, handleZoomIn, handleZoomOut, resetZoom]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isZoomed || !containerRef.current || scale <= 1) return;

@@ -16,7 +16,6 @@ interface AnimatedImageGridProps {
   columns?: number;
   hoverEffect?: 'zoom' | 'fade';
   rounded?: string;
-  enableParallax?: boolean;
   className?: string;
 }
 
@@ -134,7 +133,6 @@ export default function AnimatedImageGrid({
   columns = 3,
   hoverEffect = 'zoom',
   rounded = 'lg',
-  enableParallax = false,
   className = ''
 }: AnimatedImageGridProps) {
   const [selectedImage, setSelectedImage] = useState<GridImage | null>(null);
