@@ -1,317 +1,295 @@
 'use client';
 
-import React, { ErrorInfo, ReactNode, Component } from 'react';
-import { motion } from 'framer-motion';
+import React, { Component, ReactNode } from 'react';
 
-interface ErrorBoundaryState {
+interface ErrorInfo {
+  componentStack: string;
+}
+
+interface Props {
+  children: ReactNode;
+  fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+}
+
+interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
-  errorId: string;
 }
 
-interface ErrorBoundaryProps {
-  children: ReactNode;
-  fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo, errorId: string) => void;
-  enableLogging?: boolean;
-  showErrorDetails?: boolean;
-  className?: string;
-  context?: 'page' | 'component' | 'photo' | 'gallery' | 'general';
-}
+// Simple SVG icons to replace lucide-react
+const AlertTriangleIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path 
+      d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
-interface ErrorDisplayProps {
-  error: Error;
-  errorInfo: ErrorInfo;
-  errorId: string;
-  context: ErrorBoundaryProps['context'];
-  onRetry: () => void;
-  showDetails: boolean;
-  onToggleDetails: () => void;
-}
+const RefreshIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path 
+      d="M23 4v6h-6M1 20v-6h6M20.49 9A9 9 0 0 0 5.64 5.64L1 10.92M3.51 15a9 9 0 0 0 14.85 3.36L23 13.08" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  private retryCount = 0;
-  private maxRetries = 3;
-
-  constructor(props: ErrorBoundaryProps) {
+class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null,
-      errorId: '',
+      errorInfo: null
     };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    const errorId = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return {
       hasError: true,
-      error,
-      errorId,
+      error
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    const { onError, enableLogging = true } = this.props;
-    const { errorId } = this.state;
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    
+    this.setState({
+      error,
+      errorInfo
+    });
 
-    // Update state with error info
-    this.setState({ errorInfo });
-
-    // Log error to console in development
-    if (enableLogging && process.env.NODE_ENV === 'development') {
-      console.group(`🚨 Error Boundary: ${errorId}`);
-      console.error('Error:', error);
-      console.error('Component Stack:', errorInfo.componentStack);
-      console.error('Error Stack:', error.stack);
-      console.groupEnd();
-    }
-
-    // Call custom error handler if provided
-    if (onError) {
-      try {
-        onError(error, errorInfo, errorId);
-      } catch (handlerError) {
-        console.error('Error in error handler:', handlerError);
-      }
-    }
-
-    // Log to analytics service in production
-    if (process.env.NODE_ENV === 'production' && enableLogging) {
-      this.logErrorToService(error, errorInfo, errorId);
+    // Call the onError callback if provided
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
     }
   }
 
-  private logErrorToService = async (error: Error, errorInfo: ErrorInfo, errorId: string) => {
-    try {
-      // Replace with your analytics service
-      // Example: Sentry, LogRocket, or custom service
-      console.warn('Error logged to service:', {
-        errorId,
-        message: error.message,
-        stack: error.stack,
-        componentStack: errorInfo.componentStack,
-        context: this.props.context,
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-      });
-    } catch (loggingError) {
-      console.error('Failed to log error to service:', loggingError);
-    }
-  };
-
-  private handleRetry = () => {
-    if (this.retryCount < this.maxRetries) {
-      this.retryCount++;
-      this.setState({
-        hasError: false,
-        error: null,
-        errorInfo: null,
-        errorId: '',
-      });
-    }
-  };
-
-  private handleReset = () => {
-    this.retryCount = 0;
+  handleRetry = () => {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null,
-      errorId: '',
+      errorInfo: null
     });
   };
 
   render() {
-    const { hasError, error, errorInfo, errorId } = this.state;
-    const { children, fallback, showErrorDetails = false, className = '', context = 'general' } = this.props;
-
-    if (hasError && error && errorInfo) {
-      if (fallback) {
-        return fallback;
+    if (this.state.hasError) {
+      // Custom fallback UI
+      if (this.props.fallback) {
+        return this.props.fallback;
       }
 
+      // Default error UI
       return (
-        <ErrorDisplay
-          error={error}
-          errorInfo={errorInfo}
-          errorId={errorId}
-          context={context}
+        <ErrorDisplay 
+          error={this.state.error}
+          errorInfo={this.state.errorInfo}
           onRetry={this.handleRetry}
-          showDetails={showErrorDetails}
-          onToggleDetails={() => {}}
-          className={className}
         />
       );
     }
 
-    return children;
+    return this.props.children;
   }
 }
 
-// Error display component with context-specific messaging
-function ErrorDisplay({ 
-  error, 
-  errorInfo, 
-  errorId, 
-  context, 
-  onRetry, 
-  showDetails, 
-  onToggleDetails, 
-  className 
-}: ErrorDisplayProps & { className?: string }) {
-  const [detailsVisible, setDetailsVisible] = React.useState(showDetails);
+interface ErrorDisplayProps {
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
+  onRetry: () => void;
+}
 
-  const contextMessages = {
-    page: {
-      title: 'Page Error',
-      description: 'Something went wrong loading this page. Please try refreshing or go back to the previous page.',
-      icon: '📄',
-    },
-    component: {
-      title: 'Component Error',
-      description: 'A component failed to render properly. The rest of the page should still work normally.',
-      icon: '⚙️',
-    },
-    photo: {
-      title: 'Photo Error',
-      description: 'Unable to load or display this photo. You can try refreshing or view other photos.',
-      icon: '📷',
-    },
-    gallery: {
-      title: 'Gallery Error',
-      description: 'There was an issue loading the photo gallery. Please try again.',
-      icon: '🖼️',
-    },
-    general: {
-      title: 'Something Went Wrong',
-      description: 'An unexpected error occurred. Please try again or refresh the page.',
-      icon: '⚠️',
-    },
-  };
+function ErrorDisplay({ error, errorInfo, onRetry }: ErrorDisplayProps) {
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
-  const contextInfo = contextMessages[context] || contextMessages.general;
-
-  const toggleDetails = () => {
-    setDetailsVisible(!detailsVisible);
-    onToggleDetails();
-  };
+  // Safe error message extraction with proper null checking
+  const errorMessage = error?.message || 'An unexpected error occurred';
+  const errorName = error?.name || 'Error';
+  
+  // Safe stack trace extraction with proper null checking
+  const errorStack = error?.stack || 'No stack trace available';
+  const componentStack = errorInfo?.componentStack || 'No component stack available';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`min-h-[200px] flex items-center justify-center p-6 ${className}`}
-    >
-      <div className="max-w-md mx-auto text-center">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.1, type: 'spring' }}
-          className="text-6xl mb-4"
-        >
-          {contextInfo.icon}
-        </motion.div>
-        
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          {contextInfo.title}
-        </h2>
-        
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          {contextInfo.description}
-        </p>
-
-        <div className="space-y-3">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onRetry}
-            className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
-          >
-            Try Again
-          </motion.button>
-
-          <button
-            onClick={toggleDetails}
-            className="block mx-auto text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-          >
-            {detailsVisible ? 'Hide Details' : 'Show Error Details'}
-          </button>
-        </div>
-
-        {detailsVisible && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-left overflow-hidden"
-          >
-            <div className="text-sm space-y-2">
-              <div>
-                <strong className="text-red-600 dark:text-red-400">Error ID:</strong>
-                <span className="ml-2 font-mono text-xs">{errorId}</span>
-              </div>
-              <div>
-                <strong className="text-red-600 dark:text-red-400">Message:</strong>
-                <span className="ml-2">{error.message}</span>
-              </div>
-              {process.env.NODE_ENV === 'development' && (
-                <>
-                  <div>
-                    <strong className="text-red-600 dark:text-red-400">Stack Trace:</strong>
-                    <pre className="mt-1 text-xs bg-gray-200 dark:bg-gray-700 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-                      {error.stack}
-                    </pre>
-                  </div>
-                  <div>
-                    <strong className="text-red-600 dark:text-red-400">Component Stack:</strong>
-                    <pre className="mt-1 text-xs bg-gray-200 dark:bg-gray-700 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-                      {errorInfo.componentStack}
-                    </pre>
-                  </div>
-                </>
-              )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-md w-full mx-4">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+          <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/20 rounded-full mb-4">
+            <div className="w-6 h-6 text-red-600 dark:text-red-400">
+              <AlertTriangleIcon />
             </div>
-          </motion.div>
-        )}
+          </div>
+          
+          <div className="text-center">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Oops! Something went wrong
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              We apologize for the inconvenience. Please try refreshing the page.
+            </p>
+          </div>
 
-        <p className="mt-4 text-xs text-gray-400">
-          If this problem persists, please contact support with the error ID above.
-        </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={onRetry}
+              className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <div className="w-4 h-4 mr-2">
+                <RefreshIcon />
+              </div>
+              Try Again
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+
+          {isDevelopment && (
+            <details className="mt-6">
+              <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                Error Details (Development)
+              </summary>
+              <div className="mt-3 space-y-3">
+                <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md">
+                  <h4 className="text-sm font-medium text-red-800 dark:text-red-400 mb-1">
+                    {errorName}: {errorMessage}
+                  </h4>
+                  <pre className="text-xs text-gray-700 dark:text-gray-300 overflow-x-auto whitespace-pre-wrap">
+                    {errorStack}
+                  </pre>
+                </div>
+                {componentStack && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+                    <h4 className="text-sm font-medium text-blue-800 dark:text-blue-400 mb-1">
+                      Component Stack:
+                    </h4>
+                    <pre className="text-xs text-gray-700 dark:text-gray-300 overflow-x-auto whitespace-pre-wrap">
+                      {componentStack}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </details>
+          )}
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
-// Specialized error boundaries for common use cases
-export const PageErrorBoundary = ({ children, ...props }: Omit<ErrorBoundaryProps, 'context'>) => (
-  <ErrorBoundary context="page" {...props}>
-    {children}
-  </ErrorBoundary>
-);
+// Hook version for functional components with proper error handling
+export function useErrorBoundary() {
+  const [error, setError] = React.useState<Error | null>(null);
 
-export const PhotoErrorBoundary = ({ children, ...props }: Omit<ErrorBoundaryProps, 'context'>) => (
-  <ErrorBoundary context="photo" {...props}>
-    {children}
-  </ErrorBoundary>
-);
+  const resetError = React.useCallback(() => {
+    setError(null);
+  }, []);
 
-export const GalleryErrorBoundary = ({ children, ...props }: Omit<ErrorBoundaryProps, 'context'>) => (
-  <ErrorBoundary context="gallery" {...props}>
-    {children}
-  </ErrorBoundary>
-);
+  React.useEffect(() => {
+    if (error) {
+      throw error;
+    }
+  }, [error]);
 
-export const ComponentErrorBoundary = ({ children, ...props }: Omit<ErrorBoundaryProps, 'context'>) => (
-  <ErrorBoundary context="component" {...props}>
-    {children}
-  </ErrorBoundary>
-);
+  const captureError = React.useCallback((error: Error) => {
+    setError(error);
+  }, []);
 
-// Legacy compatibility - replace PhotoPageErrorBoundary
-export const PhotoPageErrorBoundary = PhotoErrorBoundary;
+  return { captureError, resetError };
+}
+
+// Utility function to safely filter arrays with comprehensive null checking
+export function safeFilter<T>(array: T[] | null | undefined, predicate: (item: T) => boolean): T[] {
+  // Check if array is null, undefined, or not an actual array
+  if (!array || !Array.isArray(array)) {
+    return [];
+  }
+  
+  try {
+    // Additional safety: ensure predicate is a function
+    if (typeof predicate !== 'function') {
+      console.warn('safeFilter: predicate is not a function, returning original array');
+      return array;
+    }
+    
+    return array.filter(predicate);
+  } catch (error) {
+    console.error('safeFilter: Error during filtering:', error);
+    return [];
+  }
+}
+
+// Utility function to safely map arrays with comprehensive null checking
+export function safeMap<T, U>(array: T[] | null | undefined, mapper: (item: T, index: number) => U): U[] {
+  // Check if array is null, undefined, or not an actual array
+  if (!array || !Array.isArray(array)) {
+    return [];
+  }
+  
+  try {
+    // Additional safety: ensure mapper is a function
+    if (typeof mapper !== 'function') {
+      console.warn('safeMap: mapper is not a function, returning empty array');
+      return [];
+    }
+    
+    return array.map(mapper);
+  } catch (error) {
+    console.error('safeMap: Error during mapping:', error);
+    return [];
+  }
+}
+
+// Utility function to safely find array elements with null checking
+export function safeFind<T>(array: T[] | null | undefined, predicate: (item: T) => boolean): T | undefined {
+  // Check if array is null, undefined, or not an actual array
+  if (!array || !Array.isArray(array)) {
+    return undefined;
+  }
+  
+  try {
+    // Additional safety: ensure predicate is a function
+    if (typeof predicate !== 'function') {
+      console.warn('safeFind: predicate is not a function, returning undefined');
+      return undefined;
+    }
+    
+    return array.find(predicate);
+  } catch (error) {
+    console.error('safeFind: Error during find operation:', error);
+    return undefined;
+  }
+}
+
+// Higher-order component for wrapping components with error boundary
+export function withErrorBoundary<P extends object>(
+  WrappedComponent: React.ComponentType<P>,
+  errorBoundaryProps?: Omit<Props, 'children'>
+) {
+  const WithErrorBoundaryComponent = (props: P) => {
+    return (
+      <ErrorBoundary {...errorBoundaryProps}>
+        <WrappedComponent {...props} />
+      </ErrorBoundary>
+    );
+  };
+
+  WithErrorBoundaryComponent.displayName = `withErrorBoundary(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+
+  return WithErrorBoundaryComponent;
+}
 
 export default ErrorBoundary;
