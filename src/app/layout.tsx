@@ -1,6 +1,5 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import "@/styles/social-interactions.css";
 import Header from "@/components/Header";
@@ -9,8 +8,6 @@ import AuthProvider from "@/components/AuthProvider";
 import ToastProvider from "@/components/ToastProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import PageTransition from "@/components/PageTransition";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Jakob Szarkowicz - Photography Portfolio",
@@ -38,11 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${inter.className} dark`}
-      suppressHydrationWarning
-    >
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className="min-h-screen flex flex-col overflow-x-hidden"
         suppressHydrationWarning

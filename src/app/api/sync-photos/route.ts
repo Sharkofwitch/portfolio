@@ -6,25 +6,6 @@ import { getEnvVar } from "@/lib/env";
 // Ensure this is a dynamic route with no caching
 export const dynamic = "force-dynamic";
 
-// Get environment variables for Nextcloud
-const NEXTCLOUD_URL = getEnvVar("NEXTCLOUD_URL");
-const NEXTCLOUD_USERNAME = getEnvVar("NEXTCLOUD_USERNAME");
-const NEXTCLOUD_PASSWORD = getEnvVar("NEXTCLOUD_PASSWORD");
-const NEXTCLOUD_PHOTOS_PATH = (
-  process.env.NEXTCLOUD_PHOTOS_PATH || "/Photos/Portfolio"
-).replace(/\/+/g, "/");
-
-// Create WebDAV client
-const baseUrl = NEXTCLOUD_URL.endsWith("/")
-  ? NEXTCLOUD_URL.slice(0, -1)
-  : NEXTCLOUD_URL;
-const webdavUrl = `${baseUrl}/remote.php/webdav`;
-const client = createClient(webdavUrl, {
-  username: NEXTCLOUD_USERNAME,
-  password: NEXTCLOUD_PASSWORD,
-  headers: { Accept: "*/*" },
-});
-
 export async function GET(request: NextRequest) {
   try {
     // Require API key for this admin operation
@@ -38,6 +19,25 @@ export async function GET(request: NextRequest) {
         { status: 401 },
       );
     }
+
+    // Get environment variables for Nextcloud at runtime
+    const NEXTCLOUD_URL = getEnvVar("NEXTCLOUD_URL");
+    const NEXTCLOUD_USERNAME = getEnvVar("NEXTCLOUD_USERNAME");
+    const NEXTCLOUD_PASSWORD = getEnvVar("NEXTCLOUD_PASSWORD");
+    const NEXTCLOUD_PHOTOS_PATH = (
+      process.env.NEXTCLOUD_PHOTOS_PATH || "/Photos/Portfolio"
+    ).replace(/\/+/g, "/");
+
+    // Create WebDAV client
+    const baseUrl = NEXTCLOUD_URL.endsWith("/")
+      ? NEXTCLOUD_URL.slice(0, -1)
+      : NEXTCLOUD_URL;
+    const webdavUrl = `${baseUrl}/remote.php/webdav`;
+    const client = createClient(webdavUrl, {
+      username: NEXTCLOUD_USERNAME,
+      password: NEXTCLOUD_PASSWORD,
+      headers: { Accept: "*/*" },
+    });
 
     // Step 1: List all photos in Nextcloud
     const cleanPath = NEXTCLOUD_PHOTOS_PATH.replace(/^\/+|\/+$/g, "");
