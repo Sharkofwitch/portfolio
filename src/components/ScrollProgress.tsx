@@ -9,9 +9,11 @@ import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
  * 1. A thin gradient progress bar pinned to the very top of the page that
  *    fills as the user scrolls (similar to YouTube / Medium reading progress).
  *
- * 2. A floating "back to top" button that fades in after 40 % scroll depth
+ * 2. A floating "back to top" button that fades in after 35 % scroll depth
  *    and smoothly scrolls back to the top of the page when clicked.
  */
+
+const BACK_TO_TOP_THRESHOLD = 0.35;
 export default function ScrollProgress() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
@@ -19,7 +21,9 @@ export default function ScrollProgress() {
   const [showBtn, setShowBtn] = useState(false);
 
   useEffect(() => {
-    const unsub = scrollYProgress.onChange((v) => setShowBtn(v > 0.35));
+    const unsub = scrollYProgress.onChange((v) =>
+      setShowBtn(v > BACK_TO_TOP_THRESHOLD),
+    );
     return unsub;
   }, [scrollYProgress]);
 
