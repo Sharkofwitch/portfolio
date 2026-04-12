@@ -97,13 +97,11 @@ const PhotoContent = ({ photoId }: PhotoContentProps) => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft" && currentIdx > 0) {
         const prev = allPhotos[currentIdx - 1];
-        const slug = `${prev.title?.toLowerCase().replace(/\s+/g, "-") || "photo"}-${prev.id}`;
-        router.push(`/gallery/${slug}`);
+        router.push(`/gallery/${getPhotoSlug(prev)}`);
       }
       if (e.key === "ArrowRight" && currentIdx < allPhotos.length - 1) {
         const next = allPhotos[currentIdx + 1];
-        const slug = `${next.title?.toLowerCase().replace(/\s+/g, "-") || "photo"}-${next.id}`;
-        router.push(`/gallery/${slug}`);
+        router.push(`/gallery/${getPhotoSlug(next)}`);
       }
     };
 
