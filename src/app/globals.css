@@ -325,6 +325,70 @@
 }
 
 @layer utilities {
+  /* ====================================================
+   * Visual Mode: Film Grain
+   * ==================================================== */
+  .mode-grain body::after {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9997;
+    opacity: 0.38;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    mix-blend-mode: overlay;
+    animation: grain-anim 0.12s steps(1) infinite;
+  }
+
+  .mode-grain body {
+    filter: sepia(18%) contrast(1.06) brightness(0.97);
+  }
+
+  @keyframes grain-anim {
+    0% {
+      background-position: 0 0;
+    }
+    10% {
+      background-position: -40px -60px;
+    }
+    20% {
+      background-position: 80px 20px;
+    }
+    30% {
+      background-position: -20px 80px;
+    }
+    40% {
+      background-position: 60px -40px;
+    }
+    50% {
+      background-position: -80px 10px;
+    }
+    60% {
+      background-position: 10px -80px;
+    }
+    70% {
+      background-position: -60px 60px;
+    }
+    80% {
+      background-position: 40px 40px;
+    }
+    90% {
+      background-position: -10px -20px;
+    }
+    100% {
+      background-position: 0 0;
+    }
+  }
+
+  /* ====================================================
+   * Visual Mode: Black & White
+   * ==================================================== */
+  .mode-bw body {
+    filter: grayscale(100%) contrast(1.08);
+  }
+
   .image-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-6;
   }

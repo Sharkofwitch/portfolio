@@ -9,6 +9,9 @@ import AuthProvider from "@/components/AuthProvider";
 import ToastProvider from "@/components/ToastProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import PageTransition from "@/components/PageTransition";
+import CursorSpotlight from "@/components/CursorSpotlight";
+import VisualModeToggle from "@/components/VisualModeToggle";
+import ScrollProgress from "@/components/ScrollProgress";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -50,6 +53,9 @@ export default function RootLayout({
         <AuthProvider>
           <ErrorBoundary>
             <ToastProvider>
+              <CursorSpotlight />
+              <VisualModeToggle />
+              <ScrollProgress />
               {!children?.toString().includes("/admin") && <Header />}
               <PageTransition>
                 <main

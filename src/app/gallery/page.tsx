@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import GalleryGrid from "@/components/GalleryGrid";
+import GalleryFilterBar, { SortOption } from "@/components/GalleryFilterBar";
 import { PhotoMetadata } from "@/lib/photo-types";
 import Image from "next/image";
 
@@ -11,6 +12,10 @@ export default function GalleryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+
+  // Filter & sort state
+  const [activeCamera, setActiveCamera] = useState("all");
+  const [activeSort, setActiveSort] = useState<SortOption>("newest");
 
   // Parallax scrolling effect
   const { scrollY } = useScroll();
@@ -54,6 +59,27 @@ export default function GalleryPage() {
 
     fetchPhotos();
   }, []);
+
+  // Derived: filtered + sorted photos
+  const filteredPhotos = useMemo(() => {
+    let list =
+      activeCamera === "all"
+        ? photos
+        : photos.filter((p) => p.camera?.trim() === activeCamera);
+
+    if (activeSort === "oldest") {
+      list = [...list].sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+    } else if (activeSort === "title") {
+      list = [...list].sort((a, b) =>
+        (a.title || "").localeCompare(b.title || ""),
+      );
+    }
+    // "newest" is the default sort already applied when fetching
+    return list;
+  }, [photos, activeCamera, activeSort]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -138,6 +164,18 @@ export default function GalleryPage() {
         transition={{ delay: 0.2 }}
         className="max-w-7xl mx-auto px-4 py-12"
       >
+        {/* Filter bar */}
+        {!loading && !error && photos.length > 0 && (
+          <GalleryFilterBar
+            photos={photos}
+            activeCamera={activeCamera}
+            activeSort={activeSort}
+            onCameraChange={setActiveCamera}
+            onSortChange={setActiveSort}
+            filteredCount={filteredPhotos.length}
+          />
+        )}
+
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[400px]">
             <div className="w-16 h-16 border-4 border-gray-800 border-t-gray-300 rounded-full animate-spin mb-4" />
@@ -149,14 +187,22 @@ export default function GalleryPage() {
               <p className="text-gray-300">{error}</p>
             </div>
           </div>
-        ) : photos.length === 0 ? (
+        ) : filteredPhotos.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
             <div className="p-6 backdrop-blur-xl bg-black/70 rounded-2xl border border-white/10">
-              <p className="text-gray-300">No photos found in the gallery.</p>
+              <p className="text-gray-300">
+                No photos match the selected filter.
+              </p>
+              <button
+                onClick={() => setActiveCamera("all")}
+                className="mt-4 text-sm text-white/50 underline hover:text-white transition-colors"
+              >
+                Clear filter
+              </button>
             </div>
           </div>
         ) : (
-          <GalleryGrid photos={photos} />
+          <GalleryGrid photos={filteredPhotos} />
         )}
       </motion.div>
     </div>

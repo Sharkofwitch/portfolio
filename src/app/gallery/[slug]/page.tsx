@@ -11,6 +11,7 @@ import PhotoPageErrorBoundary from "@/components/PhotoPageErrorBoundary";
 import { usePhotoViewStats } from "@/lib/photo-view-stats";
 import { formatImagePath } from "@/lib/utils";
 import ZoomImage from "@/components/ZoomImage";
+import FilmStrip from "@/components/FilmStrip";
 
 interface PhotoContentProps {
   photoId: string;
@@ -168,6 +169,9 @@ const PhotoContent = ({ photoId }: PhotoContentProps) => {
             </div>
           </div>
         </motion.div>
+
+        {/* Film strip contact sheet navigator */}
+        <FilmStrip currentPhotoId={photo.id} />
       </main>
       <Footer />
     </>
