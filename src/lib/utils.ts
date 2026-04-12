@@ -137,7 +137,16 @@ export function setLocalStorage<T>(key: string, value: T): boolean {
 }
 
 /**
- * Ensures an image path is properly formatted for the application
+ * Generates a URL slug for a photo based on its title and id
+ */
+export function getPhotoSlug(photo: {
+  id: string;
+  title?: string | null;
+}): string {
+  return `${photo.title?.toLowerCase().replace(/\s+/g, "-") || "photo"}-${photo.id}`;
+}
+
+/**
  * @param src The original image source path or URL
  * @returns A properly formatted image path
  */

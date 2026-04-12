@@ -131,7 +131,7 @@ export default function GalleryGrid({
                   photo={photo}
                   onClick={() => setLightboxIndex(index)}
                   variants={itemVariants}
-                  masonry
+                  isMasonry
                 />
               </div>
             ))}
@@ -184,14 +184,14 @@ interface PhotoCardProps {
   photo: PhotoMetadata;
   onClick: () => void;
   variants?: Variants;
-  masonry?: boolean;
+  isMasonry?: boolean;
 }
 
 const PhotoCard: React.FC<PhotoCardProps> = ({
   photo,
   onClick,
   variants,
-  masonry,
+  isMasonry,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -248,7 +248,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     </motion.div>
   );
 
-  if (masonry) {
+  if (isMasonry) {
     return (
       <motion.div
         variants={variants}
@@ -287,14 +287,16 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
               </svg>
             </div>
           )}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={getImageUrl()}
             alt={photo.alt || photo.title || "Photography"}
+            width={photo.width || 800}
+            height={photo.height || 600}
             className={`w-full h-auto block transition-opacity duration-300 ${
               imageLoaded ? "opacity-100" : "opacity-0"
             }`}
             onLoad={() => setImageLoaded(true)}
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
           {overlay}
         </div>

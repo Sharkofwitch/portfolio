@@ -5,27 +5,13 @@ import { useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { PhotoMetadata } from "@/lib/photo-types";
+import { getPhotoSlug, formatImagePath } from "@/lib/utils";
 
 interface PhotoLightboxProps {
   photos: PhotoMetadata[];
   currentIndex: number;
   onClose: () => void;
   onNavigate: (index: number) => void;
-}
-
-function getImageUrl(src: string): string {
-  if (src.startsWith("/photos/")) {
-    return `/api/photos/${src.split("/").pop()}`;
-  } else if (src.startsWith("/api/photos/")) {
-    return src;
-  }
-  const parts = src.split("/").filter(Boolean);
-  const filename = parts.length > 0 ? parts[parts.length - 1] : src;
-  return `/api/photos/${filename}`;
-}
-
-function getPhotoSlug(photo: PhotoMetadata): string {
-  return `${photo.title?.toLowerCase().replace(/\s+/g, "-") || "photo"}-${photo.id}`;
 }
 
 export default function PhotoLightbox({
@@ -53,7 +39,6 @@ export default function PhotoLightbox({
       if (e.key === "ArrowRight") handleNext();
     };
     window.addEventListener("keydown", handleKey);
-    // Prevent body scroll while lightbox is open
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", handleKey);
@@ -73,7 +58,7 @@ export default function PhotoLightbox({
         transition={{ duration: 0.25 }}
         onClick={onClose}
       >
-        {/* Main content — stop click propagation so overlay-click closes only when clicking backdrop */}
+        {/* Main content */}
         <motion.div
           className="relative flex flex-col md:flex-row w-full h-full max-w-7xl mx-auto"
           initial={{ scale: 0.95, opacity: 0 }}
@@ -95,7 +80,7 @@ export default function PhotoLightbox({
               >
                 <div className="relative w-full h-full max-h-[80vh] md:max-h-[90vh]">
                   <Image
-                    src={getImageUrl(photo.src)}
+                    src={formatImagePath(photo.src)}
                     alt={photo.alt || photo.title || "Photo"}
                     fill
                     className="object-contain select-none"
@@ -107,7 +92,7 @@ export default function PhotoLightbox({
               </motion.div>
             </AnimatePresence>
 
-            {/* Prev / Next buttons */}
+            {/* Prev button */}
             {hasPrev && (
               <motion.button
                 className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:bg-black/80 transition-colors z-10"
@@ -131,6 +116,8 @@ export default function PhotoLightbox({
                 </svg>
               </motion.button>
             )}
+
+            {/* Next button */}
             {hasNext && (
               <motion.button
                 className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:bg-black/80 transition-colors z-10"
@@ -220,7 +207,6 @@ export default function PhotoLightbox({
               </button>
             </div>
 
-            {/* Keyboard hint */}
             <p className="text-xs text-white/25 font-mono text-center">
               ← → to navigate · Esc to close
             </p>

@@ -7,7 +7,7 @@ import { SocialActions } from "@/components/SocialInteractions";
 import { PhotoMetadata } from "@/lib/photo-types";
 import PhotoPageErrorBoundary from "@/components/PhotoPageErrorBoundary";
 import { usePhotoViewStats } from "@/lib/photo-view-stats";
-import { formatImagePath } from "@/lib/utils";
+import { formatImagePath, getPhotoSlug } from "@/lib/utils";
 import ZoomImage from "@/components/ZoomImage";
 import ScrollProgress from "@/components/ScrollProgress";
 
@@ -149,9 +149,6 @@ const PhotoContent = ({ photoId }: PhotoContentProps) => {
   const prevPhoto = currentIdx > 0 ? allPhotos[currentIdx - 1] : null;
   const nextPhoto =
     currentIdx < allPhotos.length - 1 ? allPhotos[currentIdx + 1] : null;
-
-  const getPhotoSlug = (p: PhotoMetadata) =>
-    `${p.title?.toLowerCase().replace(/\s+/g, "-") || "photo"}-${p.id}`;
 
   return (
     <div className="min-h-screen bg-black text-white">
