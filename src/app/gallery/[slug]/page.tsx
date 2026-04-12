@@ -1,16 +1,15 @@
 "use client";
 
 import React from "react";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { SocialActions } from "@/components/SocialInteractions";
 import { PhotoMetadata } from "@/lib/photo-types";
 import PhotoPageErrorBoundary from "@/components/PhotoPageErrorBoundary";
 import { usePhotoViewStats } from "@/lib/photo-view-stats";
 import { formatImagePath } from "@/lib/utils";
 import ZoomImage from "@/components/ZoomImage";
+import ScrollProgress from "@/components/ScrollProgress";
 
 interface PhotoContentProps {
   photoId: string;
@@ -18,7 +17,9 @@ interface PhotoContentProps {
 
 // This component gets params from the parent component before React.use() is called
 const PhotoContent = ({ photoId }: PhotoContentProps) => {
+  const router = useRouter();
   const [photo, setPhoto] = React.useState<PhotoMetadata | null>(null);
+  const [allPhotos, setAllPhotos] = React.useState<PhotoMetadata[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
   const { recordView } = usePhotoViewStats();
@@ -36,6 +37,8 @@ const PhotoContent = ({ photoId }: PhotoContentProps) => {
         if (!data.photos) {
           throw new Error("Invalid photo data received");
         }
+
+        setAllPhotos(data.photos);
 
         const foundPhoto = data.photos.find(
           (p: PhotoMetadata) => p.id === photoId,
@@ -85,13 +88,36 @@ const PhotoContent = ({ photoId }: PhotoContentProps) => {
     };
   }, [photoId, recordView]);
 
+  // Keyboard navigation between photos
+  React.useEffect(() => {
+    if (!photo || allPhotos.length === 0) return;
+
+    const currentIdx = allPhotos.findIndex((p) => p.id === photo.id);
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" && currentIdx > 0) {
+        const prev = allPhotos[currentIdx - 1];
+        const slug = `${prev.title?.toLowerCase().replace(/\s+/g, "-") || "photo"}-${prev.id}`;
+        router.push(`/gallery/${slug}`);
+      }
+      if (e.key === "ArrowRight" && currentIdx < allPhotos.length - 1) {
+        const next = allPhotos[currentIdx + 1];
+        const slug = `${next.title?.toLowerCase().replace(/\s+/g, "-") || "photo"}-${next.id}`;
+        router.push(`/gallery/${slug}`);
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [photo, allPhotos, router]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-32 h-32 bg-gray-300 dark:bg-gray-700 rounded-md mb-4"></div>
-          <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-48 mb-2.5"></div>
-          <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-32"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-32 h-32 bg-gray-800 rounded-md"></div>
+          <div className="h-4 bg-gray-800 rounded w-48"></div>
+          <div className="h-3 bg-gray-800 rounded w-32"></div>
         </div>
       </div>
     );
@@ -99,16 +125,18 @@ const PhotoContent = ({ photoId }: PhotoContentProps) => {
 
   if (error || !photo) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center p-4 max-w-md">
-          <h1 className="text-2xl font-bold mb-2">Unable to load photo</h1>
-          <p className="mb-4 text-gray-500">
+          <h1 className="text-2xl font-bold mb-2 text-white">
+            Unable to load photo
+          </h1>
+          <p className="mb-4 text-gray-400">
             We couldn&apos;t load this photo. It may have been removed or there
             might be a temporary issue.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-black text-white rounded-md"
+            className="apple-button"
           >
             Try Again
           </button>
@@ -117,60 +145,206 @@ const PhotoContent = ({ photoId }: PhotoContentProps) => {
     );
   }
 
+  const currentIdx = allPhotos.findIndex((p) => p.id === photo.id);
+  const prevPhoto = currentIdx > 0 ? allPhotos[currentIdx - 1] : null;
+  const nextPhoto =
+    currentIdx < allPhotos.length - 1 ? allPhotos[currentIdx + 1] : null;
+
+  const getPhotoSlug = (p: PhotoMetadata) =>
+    `${p.title?.toLowerCase().replace(/\s+/g, "-") || "photo"}-${p.id}`;
+
   return (
-    <>
-      <Header />
-      <main className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-black text-white">
+      <ScrollProgress />
+
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Back button + navigation */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between mb-8"
+        >
+          <button
+            onClick={() => router.push("/gallery")}
+            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-mono group"
+          >
+            <motion.svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              animate={{ x: 0 }}
+              whileHover={{ x: -3 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </motion.svg>
+            <span>Back to Gallery</span>
+          </button>
+
+          {/* Prev / Next navigation */}
+          <div className="flex items-center gap-2">
+            {prevPhoto ? (
+              <motion.button
+                onClick={() =>
+                  router.push(`/gallery/${getPhotoSlug(prevPhoto)}`)
+                }
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/50 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-colors"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                title="Previous photo (←)"
+              >
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                PREV
+              </motion.button>
+            ) : (
+              <span className="px-3 py-1.5 text-xs font-mono text-white/20 border border-white/5 rounded-full">
+                PREV
+              </span>
+            )}
+
+            <span className="text-xs font-mono text-white/30">
+              {currentIdx + 1} / {allPhotos.length}
+            </span>
+
+            {nextPhoto ? (
+              <motion.button
+                onClick={() =>
+                  router.push(`/gallery/${getPhotoSlug(nextPhoto)}`)
+                }
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/50 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-colors"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                title="Next photo (→)"
+              >
+                NEXT
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </motion.button>
+            ) : (
+              <span className="px-3 py-1.5 text-xs font-mono text-white/20 border border-white/5 rounded-full">
+                NEXT
+              </span>
+            )}
+          </div>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-5xl mx-auto"
+          className="grid md:grid-cols-3 gap-8"
         >
-          <h1 className="text-3xl font-bold mb-4">{photo.title}</h1>
+          {/* Image — takes up 2/3 on desktop */}
+          <div className="md:col-span-2">
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-2xl md:text-3xl font-serif mb-4 text-white"
+            >
+              {photo.title}
+            </motion.h1>
 
-          <div className="mb-6 rounded-lg overflow-hidden shadow-lg">
-            <ZoomImage src={photo.src} alt={photo.alt} />
+            <motion.div
+              className="rounded-2xl overflow-hidden shadow-2xl"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15, duration: 0.5 }}
+            >
+              <ZoomImage src={photo.src} alt={photo.alt || photo.title} />
+            </motion.div>
+
+            {/* Keyboard hint */}
+            <p className="mt-3 text-center text-xs text-white/25 font-mono">
+              ← → arrow keys to navigate between photos
+            </p>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-6 md:items-start">
-            <div className="flex-1">
-              {photo.description && (
-                <p className="text-lg mb-4">{photo.description}</p>
+          {/* Sidebar */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="space-y-6"
+          >
+            {photo.description && (
+              <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-5">
+                <span className="font-mono text-xs text-white/40 uppercase tracking-wider block mb-2">
+                  About
+                </span>
+                <p className="text-white/80 leading-relaxed font-light">
+                  {photo.description}
+                </p>
+              </div>
+            )}
+
+            <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+              <span className="font-mono text-xs text-white/40 uppercase tracking-wider block">
+                Details
+              </span>
+              {photo.year && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/40 font-mono">Year</span>
+                  <span className="text-white/80">{photo.year}</span>
+                </div>
               )}
-
-              <div className="space-y-2 mb-6">
-                {photo.year && (
-                  <p>
-                    <span className="font-semibold">Year:</span> {photo.year}
-                  </p>
-                )}
-                {photo.location && (
-                  <p>
-                    <span className="font-semibold">Location:</span>{" "}
+              {photo.location && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/40 font-mono">Location</span>
+                  <span className="text-white/80 text-right max-w-[60%]">
                     {photo.location}
-                  </p>
-                )}
-                {photo.camera && (
-                  <p>
-                    <span className="font-semibold">Camera:</span>{" "}
+                  </span>
+                </div>
+              )}
+              {photo.camera && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/40 font-mono">Camera</span>
+                  <span className="text-white/80 text-right max-w-[60%]">
                     {photo.camera}
-                  </p>
-                )}
-              </div>
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div className="md:w-64">
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                <h3 className="text-lg font-medium mb-3">Share & Interact</h3>
-                <SocialActions photoId={photo.id} photoTitle={photo.title} />
-              </div>
+            <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-5">
+              <h3 className="font-mono text-xs text-white/40 uppercase tracking-wider mb-4">
+                Share & Interact
+              </h3>
+              <SocialActions photoId={photo.id} photoTitle={photo.title} />
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       </main>
-      <Footer />
-    </>
+    </div>
   );
 };
 

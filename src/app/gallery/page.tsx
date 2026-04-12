@@ -3,13 +3,19 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import GalleryGrid from "@/components/GalleryGrid";
+import ScrollProgress from "@/components/ScrollProgress";
 import { PhotoMetadata } from "@/lib/photo-types";
 import Image from "next/image";
+
+type SortOrder = "newest" | "oldest";
+type ViewMode = "grid" | "masonry";
 
 export default function GalleryPage() {
   const [photos, setPhotos] = useState<PhotoMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const headerRef = useRef<HTMLDivElement>(null);
 
   // Parallax scrolling effect
@@ -57,6 +63,7 @@ export default function GalleryPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <ScrollProgress />
       {/* Hero header with parallax effect */}
       <div ref={headerRef} className="relative h-[50vh] overflow-hidden">
         {photos.length > 0 && (
@@ -115,18 +122,103 @@ export default function GalleryPage() {
       </div>
 
       {/* Floating info bar - Apple style */}
-      <div className="sticky top-4 z-20 mx-auto max-w-4xl px-4 -mt-6">
+      <div className="sticky top-4 z-20 mx-auto max-w-5xl px-4 -mt-6">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="backdrop-blur-xl bg-black/70 rounded-xl px-6 py-4 flex items-center justify-between shadow-xl border border-white/10"
+          className="backdrop-blur-xl bg-black/70 rounded-xl px-4 py-3 flex items-center justify-between shadow-xl border border-white/10 gap-4"
         >
           <div>
-            <h2 className="text-lg font-medium text-white">Photo Collection</h2>
-            <p className="text-sm text-gray-400">
+            <h2 className="text-base font-medium text-white leading-tight">
+              Photo Collection
+            </h2>
+            <p className="text-xs text-gray-400">
               {loading ? "Loading gallery..." : `${photos.length} images`}
             </p>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center gap-2">
+            {/* Sort toggle */}
+            <div className="flex items-center rounded-lg bg-white/10 border border-white/10 overflow-hidden text-xs font-mono">
+              <button
+                onClick={() => setSortOrder("newest")}
+                className={`px-3 py-1.5 transition-colors ${
+                  sortOrder === "newest"
+                    ? "bg-white/20 text-white"
+                    : "text-white/50 hover:text-white/80"
+                }`}
+                title="Sort: Newest first"
+              >
+                NEW
+              </button>
+              <button
+                onClick={() => setSortOrder("oldest")}
+                className={`px-3 py-1.5 transition-colors ${
+                  sortOrder === "oldest"
+                    ? "bg-white/20 text-white"
+                    : "text-white/50 hover:text-white/80"
+                }`}
+                title="Sort: Oldest first"
+              >
+                OLD
+              </button>
+            </div>
+
+            {/* View mode toggle */}
+            <div className="flex items-center rounded-lg bg-white/10 border border-white/10 overflow-hidden">
+              {/* Grid icon */}
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2 transition-colors ${
+                  viewMode === "grid"
+                    ? "bg-white/20 text-white"
+                    : "text-white/50 hover:text-white/80"
+                }`}
+                title="Grid view"
+                aria-label="Grid view"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                  />
+                </svg>
+              </button>
+              {/* Masonry icon */}
+              <button
+                onClick={() => setViewMode("masonry")}
+                className={`p-2 transition-colors ${
+                  viewMode === "masonry"
+                    ? "bg-white/20 text-white"
+                    : "text-white/50 hover:text-white/80"
+                }`}
+                title="Masonry view"
+                aria-label="Masonry view"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 12a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -156,7 +248,11 @@ export default function GalleryPage() {
             </div>
           </div>
         ) : (
-          <GalleryGrid photos={photos} />
+          <GalleryGrid
+            photos={photos}
+            sortOrder={sortOrder}
+            viewMode={viewMode}
+          />
         )}
       </motion.div>
     </div>

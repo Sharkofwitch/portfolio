@@ -9,6 +9,7 @@ import AuthProvider from "@/components/AuthProvider";
 import ToastProvider from "@/components/ToastProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import PageTransition from "@/components/PageTransition";
+import BackToTop from "@/components/BackToTop";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -59,6 +60,7 @@ export default function RootLayout({
                 </main>
               </PageTransition>
               {!children?.toString().includes("/admin") && <Footer />}
+              <BackToTop />
               <Analytics />
             </ToastProvider>
           </ErrorBoundary>
