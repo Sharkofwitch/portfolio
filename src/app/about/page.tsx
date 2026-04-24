@@ -257,7 +257,7 @@ export default function AboutPage() {
               <Counter label="Photos" value={1248} />
               <Counter
                 label="Years"
-                value={Math.max(1, new Date().getFullYear() - 2023)}
+                value={Math.max(1, new Date().getFullYear() - 2024)}
                 suffix="+"
               />
               <Counter label="Cameras" value={3} />
@@ -387,7 +387,7 @@ function Counter({
   useEffect(() => {
     if (!inView) return;
     const controls = animate(mv, value, { duration: 1.4, ease: "easeOut" });
-    const unsubscribe = mv.on("change", (v) => setDisplay(Math.round(v)));
+    const unsubscribe = mv.onChange((v) => setDisplay(Math.round(v)));
     return () => {
       controls.stop();
       unsubscribe();
