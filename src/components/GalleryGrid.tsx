@@ -211,39 +211,38 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
   const overlay = (
     <motion.div
-      className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-between p-4 text-white"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-4 text-white"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isHovered ? 1 : 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div>
-        <h3 className="text-base font-medium tracking-tight truncate">
+      <div className="space-y-1.5">
+        <h3 className="text-sm font-semibold tracking-tight leading-snug drop-shadow">
           {photo.title}
         </h3>
         {photo.description && (
-          <p className="text-xs leading-relaxed line-clamp-2 text-white/90 mt-1">
+          <p className="text-xs leading-relaxed line-clamp-2 text-white/85 drop-shadow">
             {photo.description}
           </p>
         )}
-      </div>
-
-      <div className="flex justify-end">
-        <motion.button
-          whileHover={{
-            scale: 1.05,
-            backgroundColor: "rgba(255, 255, 255, 0.25)",
-          }}
-          whileTap={{ scale: 0.98 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
-          className="bg-white/15 backdrop-blur-md text-white py-2 px-3 rounded-full 
-                     transition-all duration-300 text-xs font-medium tracking-wide
-                     border border-white/10 shadow-lg"
-        >
-          Quick View
-        </motion.button>
+        <div className="flex justify-end pt-1">
+          <motion.button
+            whileHover={{
+              scale: 1.05,
+              backgroundColor: "rgba(255, 255, 255, 0.25)",
+            }}
+            whileTap={{ scale: 0.98 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+            className="bg-white/15 backdrop-blur-md text-white py-1.5 px-3 rounded-full 
+                       transition-all duration-300 text-xs font-medium tracking-wide
+                       border border-white/20 shadow-lg"
+          >
+            Quick View
+          </motion.button>
+        </div>
       </div>
     </motion.div>
   );

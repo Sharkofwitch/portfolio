@@ -150,13 +150,13 @@ export default function PhotoLightbox({
 
           {/* Details panel */}
           <motion.div
-            className="md:w-72 lg:w-80 bg-black/80 border-t md:border-t-0 md:border-l border-white/10 flex flex-col p-6 gap-4 overflow-y-auto max-h-[40vh] md:max-h-full"
+            className="md:w-72 lg:w-80 bg-black border-t md:border-t-0 md:border-l border-white/10 flex flex-col p-6 gap-4 overflow-y-auto max-h-[40vh] md:max-h-full"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1, duration: 0.3 }}
           >
             <div className="space-y-1">
-              <span className="font-mono text-xs text-white/40 uppercase tracking-wider">
+              <span className="font-mono text-xs text-white/50 uppercase tracking-wider">
                 Photo
               </span>
               <h2 className="text-xl font-serif text-white leading-tight">
@@ -165,28 +165,34 @@ export default function PhotoLightbox({
             </div>
 
             {photo.description && (
-              <p className="text-sm text-white/70 leading-relaxed font-light">
+              <p className="text-sm text-white leading-relaxed">
                 {photo.description}
               </p>
             )}
 
-            <div className="space-y-2 text-sm font-mono text-white/60">
+            <div className="space-y-2 text-sm font-mono">
               {photo.year && (
-                <div className="flex items-center gap-2">
-                  <span className="text-white/30">YEAR</span>
-                  <span className="text-white/80">{photo.year}</span>
+                <div className="flex items-start gap-3">
+                  <span className="text-white/40 text-xs uppercase tracking-wider w-16 flex-shrink-0 pt-0.5">
+                    YEAR
+                  </span>
+                  <span className="text-white">{photo.year}</span>
                 </div>
               )}
               {photo.camera && (
-                <div className="flex items-center gap-2">
-                  <span className="text-white/30">CAMERA</span>
-                  <span className="text-white/80">{photo.camera}</span>
+                <div className="flex items-start gap-3">
+                  <span className="text-white/40 text-xs uppercase tracking-wider w-16 flex-shrink-0 pt-0.5">
+                    CAMERA
+                  </span>
+                  <span className="text-white">{photo.camera}</span>
                 </div>
               )}
               {photo.location && (
-                <div className="flex items-center gap-2">
-                  <span className="text-white/30">LOCATION</span>
-                  <span className="text-white/80">{photo.location}</span>
+                <div className="flex items-start gap-3">
+                  <span className="text-white/40 text-xs uppercase tracking-wider w-16 flex-shrink-0 pt-0.5">
+                    LOCATION
+                  </span>
+                  <span className="text-white">{photo.location}</span>
                 </div>
               )}
             </div>

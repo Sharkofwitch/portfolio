@@ -5,13 +5,38 @@ import {
   useScroll,
   useTransform,
   useMotionValue,
+  useSpring,
   animate,
+  useInView,
+  type Variants,
 } from "framer-motion";
 import Image from "next/image";
 import { useRef, useEffect, useState } from "react";
 
+// Stagger container / item presets
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.12, delayChildren: 0.15 },
+  },
+};
+
+const staggerItem: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+};
+
 export default function AboutPage() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
+  const quoteRef = useRef<HTMLDivElement>(null);
+  const quoteInView = useInView(quoteRef, { once: true, margin: "-80px" });
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"],
@@ -20,83 +45,141 @@ export default function AboutPage() {
   const imageScale = useTransform(scrollYProgress, [0, 1], [0.97, 1.03]);
   const imageOpacity = useTransform(
     scrollYProgress,
-    [0, 0.2, 0.8, 1],
-    [0.85, 1, 1, 0.85],
+    [0, 0.15, 0.85, 1],
+    [0.8, 1, 1, 0.8],
   );
-  const textY = useTransform(scrollYProgress, [0, 0.5], [40, 0]);
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.2,
-      },
+  // Mouse-tracking tilt for profile image
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), {
+    stiffness: 200,
+    damping: 30,
+  });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), {
+    stiffness: 200,
+    damping: 30,
+  });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = imageRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
+    mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+  const handleMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+  };
+
+  const timeline = [
+    {
+      period: "Oct 2024",
+      label: "iPhone 16 Pro",
+      color: "bg-blue-400",
+      desc: "First steps — learning to see light, shadow, and geometry through a pocket-sized lens.",
     },
-  };
+    {
+      period: "Jan 2025",
+      label: "Yashica FX-1",
+      color: "bg-emerald-400",
+      desc: "Film slowed everything down. Each frame became a deliberate choice, each roll a finite resource.",
+    },
+    {
+      period: "2025",
+      label: "Leica T (Typ 701)",
+      color: "bg-amber-400",
+      desc: "Primary camera. Stripped-back design that rewards intention over impulse.",
+    },
+  ];
 
-  const item = {
-    hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 120 } },
-  };
+  const skills = [
+    "Composition",
+    "Film",
+    "Street",
+    "Portraits",
+    "Natural Light",
+    "Urban",
+  ];
 
   return (
     <div
       className="min-h-screen bg-white dark:bg-black relative overflow-hidden"
       ref={containerRef}
     >
-      {/* decorative radial background */}
+      {/* Ambient background */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -left-20 -top-28 w-[520px] h-[520px] rounded-full bg-gradient-to-br from-blue-50 to-emerald-50 opacity-40 blur-3xl dark:from-transparent dark:to-transparent" />
-        <div className="absolute right-0 bottom-0 w-[360px] h-[360px] rounded-full bg-gradient-to-tr from-yellow-50 to-pink-50 opacity-30 blur-2xl" />
+        <div className="absolute -left-24 -top-32 w-[560px] h-[560px] rounded-full bg-gradient-to-br from-blue-50 to-emerald-50 opacity-50 blur-3xl dark:from-blue-950/20 dark:to-emerald-950/20 dark:opacity-30" />
+        <div className="absolute right-0 bottom-0 w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-amber-50 to-rose-50 opacity-30 blur-2xl dark:from-amber-950/10 dark:to-rose-950/10 dark:opacity-20" />
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-12 md:py-24 safe-top">
         {/* Banner */}
         <motion.div
-          initial={{ opacity: 0, y: -12 }}
+          initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-8 sm:mb-16 p-4 sm:p-6 rounded-xl sm:rounded-2xl backdrop-blur-md bg-white/5 dark:bg-black/10 border border-gray-200/10 dark:border-gray-800/20 shadow-apple dark:shadow-apple-dark"
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-10 sm:mb-20 p-5 sm:p-8 rounded-2xl backdrop-blur-md bg-white/5 dark:bg-black/10 border border-gray-200/10 dark:border-gray-800/20 shadow-apple dark:shadow-apple-dark"
         >
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <motion.div
-              initial={{ opacity: 0, filter: "blur(6px)" }}
-              animate={{ opacity: 1, filter: "blur(0px)" }}
-              transition={{ duration: 0.8 }}
-              className="text-xs md:text-sm text-gray-500 dark:text-gray-400 uppercase tracking-[2px] sm:tracking-[3px] mb-2"
+              initial={{ opacity: 0, letterSpacing: "0.5em" }}
+              animate={{ opacity: 1, letterSpacing: "0.2em" }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="text-xs md:text-sm text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] font-mono"
             >
               Photography Portfolio
             </motion.div>
             <motion.h1
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="text-2xl md:text-3xl font-serif font-light text-gray-900 dark:text-white"
+              transition={{
+                delay: 0.2,
+                duration: 0.8,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className="text-2xl md:text-4xl font-serif font-light text-gray-900 dark:text-white"
             >
               About My Journey
             </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              className="text-sm text-gray-400 dark:text-gray-500 font-light max-w-xs mx-auto"
+            >
+              Light, patience, and the spaces between moments
+            </motion.p>
           </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-start">
-          {/* Left: Image */}
+        <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-start">
+          {/* Left: Image with tilt */}
           <motion.figure
-            style={{ scale: imageScale, opacity: imageOpacity }}
-            className="relative w-full rounded-2xl overflow-hidden vintage-filter group"
-            initial={{ opacity: 0, y: 8 }}
+            ref={imageRef}
+            style={{
+              scale: imageScale,
+              opacity: imageOpacity,
+              rotateX,
+              rotateY,
+              transformPerspective: 1000,
+            }}
+            className="relative w-full rounded-2xl overflow-hidden vintage-filter group cursor-default"
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
           >
             <div className="relative aspect-[4/5] w-full">
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/18 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
               <Image
                 src="/api/photos/profile.jpg"
-                alt="Jakob Szarkowicz portrait with Leica T"
+                alt="Jakob Szarkowicz — photographer"
                 fill
                 loading="lazy"
-                className="object-cover transition-transform duration-700 ease-out"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                 sizes="(max-width: 640px) 100vw, 50vw"
                 quality={80}
               />
@@ -104,71 +187,72 @@ export default function AboutPage() {
             <figcaption className="sr-only">
               Portrait of Jakob Szarkowicz with Leica T (Typ 701)
             </figcaption>
+
+            {/* Camera badge */}
             <motion.div
-              className="absolute bottom-0 left-0 right-0 p-4 md:p-6 z-20"
-              initial={{ opacity: 0, y: 14 }}
+              className="absolute bottom-4 left-4 z-20 font-mono text-xs text-white/70 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10"
+              initial={{ opacity: 0, y: 8 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35, duration: 0.6 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <div className="w-12 h-1 bg-white/40 rounded-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              Leica T · Typ 701
             </motion.div>
           </motion.figure>
 
-          {/* Right: Text + Timeline */}
+          {/* Right: Text */}
           <motion.div
-            style={{ y: textY }}
             className="space-y-8"
-            variants={container}
+            variants={staggerContainer}
             initial="hidden"
             animate="show"
           >
             <motion.div
-              variants={item}
-              className="inline-block font-mono text-sm bg-gray-100 dark:bg-gray-800/50 px-3 py-1 rounded-full text-gray-600 dark:text-gray-400"
+              variants={staggerItem}
+              className="inline-block font-mono text-xs bg-gray-100 dark:bg-gray-800/60 px-3 py-1 rounded-full text-gray-500 dark:text-gray-400 tracking-widest uppercase"
             >
-              EST. 2024
+              Est. 2024
             </motion.div>
 
-            <motion.h1
-              variants={item}
+            <motion.h2
+              variants={staggerItem}
               className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white tracking-tight leading-tight"
             >
               Capturing Modern Nostalgia
-            </motion.h1>
+            </motion.h2>
 
             <motion.div
-              variants={container}
-              className="space-y-6 text-gray-600 dark:text-gray-300 font-light"
-              viewport={{ once: true, amount: 0.2 }}
+              variants={staggerContainer}
+              className="space-y-5 text-gray-600 dark:text-gray-300"
             >
-              <motion.p variants={item}>
-                My journey in photography began in October 2024, exploring the
-                world through the lens of my iPhone 16 Pro. This modern tool
-                became my gateway into the art of visual storytelling, teaching
-                me the fundamentals of composition and light.
+              <motion.p variants={staggerItem} className="leading-relaxed">
+                Photography found me before I sought it — a spontaneous pursuit
+                that began in autumn 2024. Armed with an iPhone 16 Pro, I
+                discovered that every camera is simply a tool to make the
+                invisible visible: the quality of afternoon light, the geometry
+                of forgotten corners, the brief unguarded expressions that make
+                up a life.
               </motion.p>
 
-              <motion.p variants={item}>
-                In January 2025, I took a step into analog photography with my
-                Yashica FX1. The mechanical process of film photography has
-                given me a deeper appreciation for each frame and the
-                thoughtfulness required in capturing moments.
+              <motion.p variants={staggerItem} className="leading-relaxed">
+                Film changed everything. The Yashica FX-1 demanded patience —
+                each frame a deliberate choice, each roll a finite resource.
+                Analog photography taught me to see first, then shoot: to wait
+                for the right light rather than chase it in post.
               </motion.p>
 
-              <motion.p variants={item}>
-                As I continue to evolve as a photographer, I&apos;m excited
-                about my newest transition to the Leica T (Typ 701), which is
-                now my primary camera. This fusion of digital precision and
-                classic aesthetic represents my approach to photography—
-                bridging contemporary technology with timeless technique.
+              <motion.p variants={staggerItem} className="leading-relaxed">
+                The Leica T sits at the intersection of heritage and restraint.
+                Its stripped-back interface encourages intention over impulse.
+                Now my primary companion, it reminds me daily that the best
+                image is rarely the quickest — it&apos;s the one you waited for.
               </motion.p>
             </motion.div>
 
-            {/* Stats / Counters */}
+            {/* Stats */}
             <motion.div
-              variants={item}
-              className="flex flex-wrap gap-4 items-center"
+              variants={staggerItem}
+              className="flex flex-wrap gap-3 items-center"
             >
               <Counter label="Photos" value={1248} />
               <Counter
@@ -176,83 +260,101 @@ export default function AboutPage() {
                 value={Math.max(1, new Date().getFullYear() - 2023)}
                 suffix="+"
               />
+              <Counter label="Cameras" value={3} />
             </motion.div>
 
-            {/* Skills / chips */}
-            <motion.div variants={item} className="flex flex-wrap gap-2">
-              {["Composition", "Film", "Portraits", "Street"].map((s, i) => (
+            {/* Skill chips */}
+            <motion.div variants={staggerItem} className="flex flex-wrap gap-2">
+              {skills.map((s, i) => (
                 <motion.span
                   key={s}
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 + i * 0.06 }}
-                  className="text-xs px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 border border-gray-200/30"
+                  transition={{
+                    delay: 0.3 + i * 0.07,
+                    duration: 0.4,
+                    ease: "easeOut",
+                  }}
+                  className="text-xs px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 border border-gray-200/40 dark:border-gray-700/40"
                 >
                   {s}
                 </motion.span>
               ))}
             </motion.div>
 
+            {/* Philosophy quote */}
             <motion.div
-              variants={item}
-              className="pt-6 space-y-4 relative"
-              viewport={{ once: true }}
+              ref={quoteRef}
+              className="relative pl-4 border-l-2 border-gray-200 dark:border-gray-700"
+            >
+              <motion.p
+                initial={{ opacity: 0, x: -10 }}
+                animate={quoteInView ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                className="text-sm italic text-gray-500 dark:text-gray-400 leading-relaxed"
+              >
+                &ldquo;The camera is an instrument that teaches people how to
+                see without a camera.&rdquo;
+              </motion.p>
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={quoteInView ? { opacity: 1 } : {}}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                className="block mt-2 text-xs font-mono text-gray-400 dark:text-gray-500"
+              >
+                — Dorothea Lange
+              </motion.span>
+            </motion.div>
+
+            {/* Equipment timeline */}
+            <motion.div
+              variants={staggerItem}
+              className="pt-4 space-y-4 relative"
             >
               <motion.div
                 initial={{ scaleX: 0 }}
                 whileInView={{ scaleX: 1 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="origin-left absolute left-0 top-0 h-1 w-32 bg-gradient-to-r from-blue-400 via-emerald-400 to-transparent rounded-full opacity-40"
+                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                className="origin-left absolute left-0 top-0 h-px w-28 bg-gradient-to-r from-blue-400 via-emerald-400 to-transparent"
                 aria-hidden="true"
               />
 
-              <h2 className="font-serif text-xl text-gray-900 dark:text-white flex items-center gap-2">
-                Equipment & Timeline
-                <span className="inline-block animate-bounce text-blue-400">
-                  •
-                </span>
-              </h2>
+              <h3 className="font-serif text-lg text-gray-900 dark:text-white pt-3">
+                Equipment &amp; Timeline
+              </h3>
 
-              <ul className="space-y-3">
-                {[
-                  {
-                    label: "2024: iPhone 16 Pro",
-                    color: "bg-blue-400",
-                    desc: "Learned composition and mobile workflows.",
-                  },
-                  {
-                    label: "1970: Yashica FX1",
-                    color: "bg-emerald-400",
-                    desc: "Explored film and manual exposure.",
-                  },
-                  {
-                    label: "2014: Leica T (Typ 701)",
-                    color: "bg-yellow-400",
-                    desc: "Primary digital camera — refined color and workflow.",
-                  },
-                ].map((it, i) => (
+              <ul className="space-y-1">
+                {timeline.map((it, i) => (
                   <motion.li
                     key={i}
-                    initial={{ opacity: 0, x: -8 }}
+                    initial={{ opacity: 0, x: -10 }}
                     whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + i * 0.08 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    className="font-mono text-sm text-gray-600 dark:text-gray-400"
+                    transition={{
+                      delay: 0.4 + i * 0.1,
+                      duration: 0.5,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                    viewport={{ once: true, amount: 0.3 }}
                   >
                     <button
                       type="button"
-                      className="w-full text-left flex items-start gap-3 rounded-md p-2 group hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                      className="w-full text-left flex items-start gap-3 rounded-xl p-3 group hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
                       aria-label={it.label}
                     >
                       <span
-                        className={`w-3 h-3 rounded-full flex-shrink-0 ${it.color} transition-transform duration-200 mt-1`}
+                        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${it.color} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-black ring-transparent group-hover:ring-current transition-all duration-300`}
                         aria-hidden="true"
                       />
                       <div>
-                        <div className="transition-colors duration-300 font-medium">
-                          {it.label}
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-mono text-xs text-gray-400 dark:text-gray-500">
+                            {it.period}
+                          </span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                            {it.label}
+                          </span>
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-h-0 overflow-hidden group-hover:max-h-10 transition-all duration-300 ease-out">
                           {it.desc}
                         </div>
                       </div>
@@ -260,41 +362,6 @@ export default function AboutPage() {
                   </motion.li>
                 ))}
               </ul>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 0.14, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.5 }}
-                className="absolute -right-8 -top-8 text-6xl text-yellow-300 pointer-events-none select-none"
-                aria-hidden="true"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 48 48"
-                  className="w-16 h-16 animate-float"
-                >
-                  <circle
-                    cx="24"
-                    cy="24"
-                    r="22"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    fill="currentColor"
-                    opacity="0.2"
-                  />
-                  <rect
-                    x="12"
-                    y="18"
-                    width="24"
-                    height="16"
-                    rx="4"
-                    fill="currentColor"
-                    opacity="0.5"
-                  />
-                  <circle cx="24" cy="26" r="5" fill="#fffde4" />
-                </svg>
-              </motion.div>
             </motion.div>
           </motion.div>
         </div>
@@ -314,23 +381,29 @@ function Counter({
 }) {
   const mv = useMotionValue(0);
   const [display, setDisplay] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true });
 
   useEffect(() => {
-    const controls = animate(mv, value, { duration: 1.2, ease: "easeOut" });
-    const unsubscribe = mv.onChange((v) => setDisplay(Math.round(v)));
+    if (!inView) return;
+    const controls = animate(mv, value, { duration: 1.4, ease: "easeOut" });
+    const unsubscribe = mv.on("change", (v) => setDisplay(Math.round(v)));
     return () => {
       controls.stop();
       unsubscribe();
     };
-  }, [mv, value]);
+  }, [mv, value, inView]);
 
   return (
-    <div className="rounded-xl bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200/20 p-3 px-4 flex flex-col items-start">
-      <div className="text-2xl font-semibold">
+    <div
+      ref={ref}
+      className="rounded-2xl bg-white/70 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200/30 dark:border-white/5 p-3 px-4 flex flex-col items-start"
+    >
+      <div className="text-2xl font-semibold text-gray-900 dark:text-white tabular-nums">
         {display}
         {suffix ?? ""}
       </div>
-      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
         {label}
       </div>
     </div>
